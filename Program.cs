@@ -13,11 +13,12 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Xml.Linq;
 using System.Diagnostics;
+using System.Numerics;
 
 Console.WriteLine("Hello, World!");
 
 
-await new StartUsing().Main(args[0], args[1], args[2]);
+await new StartUsing().Main(args[0], args[1], args[2], args[3], args[4]);
 //await new StartUsing().BulkInsertInTxn();
 class StartUsing
 {
@@ -30,8 +31,10 @@ class StartUsing
         return new string(Enumerable.Repeat(chars, length)
             .Select(s => s[random.Next(s.Length)]).ToArray());
     }
-    public async Task Main(string host, string username, string password)
+    public async Task Main(string host, string username, string password, string totalS, string chunkSizeS)
     {
+        var total = Int32.Parse(totalS);
+        var chunkSize = Int32.Parse(chunkSizeS);
 
         // Initialize the Couchbase cluster
         // var options = new ClusterOptions().WithCredentials("test", "Pwd12345!");
@@ -45,7 +48,7 @@ class StartUsing
         // Create the single Transactions object
         var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
             .DurabilityLevel(DurabilityLevel.None)
-        .ExpirationTime(TimeSpan.FromMinutes(15))
+        .ExpirationTime(TimeSpan.FromHours(1))
         .Build());
 
         var documento = new
@@ -113,13 +116,15 @@ class StartUsing
             //        Console.WriteLine("\n-------------------------------------------------\n{0}", e.InnerExceptions[j].ToString());
             //    }
             //}
+
+
             async Task operate(AttemptContext ctx, int index)
             {
-                for (int i =0; i < 100; i++)
+                for (int i =0; i < chunkSize; i++)
                 {
-                    var opt = await ctx.GetOptionalAsync(_collection, (index * 100 + i).ToString()).ConfigureAwait(false);
+                    var opt = await ctx.GetOptionalAsync(_collection, (index * chunkSize + i).ToString()).ConfigureAwait(false);
                     if (opt == null)
-                        await ctx.InsertAsync(_collection, (index * 100 + i).ToString(), documento).ConfigureAwait(false);
+                        await ctx.InsertAsync(_collection, (index * chunkSize + i).ToString(), documento).ConfigureAwait(false);
                     else
                         await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
                 }
@@ -131,11 +136,11 @@ class StartUsing
            var result = await _transactions.RunAsync( async (ctx) =>
            {
 
-               await Parallel.ForEachAsync(Enumerable.Range(0, 100), async (index, token) =>
+               await Parallel.ForEachAsync(Enumerable.Range(0, total/chunkSize), async (index, token) =>
                {
                    await operate(ctx, index).ConfigureAwait(false);
                    Console.Clear();
-                   Console.Write($"Staged {(index + 1) * 100} documents");
+                   Console.Write($"Staged {(index + 1) * chunkSize} documents");
                }).ConfigureAwait(false);
 
                //    await Parallel.ForEachAsync(Enumerable.Range(0, 10000), async (index, token) =>
@@ -156,6 +161,7 @@ class StartUsing
            }).ConfigureAwait(false);
            watch.Stop();
            var elapsedMs = watch.ElapsedMilliseconds;
+           Console.Clear();
            Console.WriteLine(elapsedMs / 1000 + "s");
        }
        catch (TransactionCommitAmbiguousException e)

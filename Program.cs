@@ -143,7 +143,7 @@ class StartUsing
                {
                    tasks.Add(Task.Factory.StartNew(() => operate(ctx, i)));
                }
-               Task.WaitAll(tasks.ToArray());
+               //Task.WaitAll(tasks.ToArray());
 
                //await Parallel.ForEachAsync(Enumerable.Range(0, total/chunkSize), async (index, token) =>
                //{

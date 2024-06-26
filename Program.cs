@@ -74,11 +74,11 @@ class StartUsing
 
                await Parallel.ForEachAsync(Enumerable.Range(0, 10000), new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount -1 }, async (index, token) =>
                {
-                   var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
+                   var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(true);
                    if (opt == null)
-                       await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
+                       await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(true);
                    else
-                       await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
+                       await ctx.ReplaceAsync(opt, documento).ConfigureAwait(true);
                    if (index % 100 == 0)
                    {
                                     Console.Clear();

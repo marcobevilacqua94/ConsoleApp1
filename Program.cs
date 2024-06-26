@@ -97,14 +97,6 @@ class StartUsing
                  var result = await _transactions.RunAsync(async (ctx) => 
                 {
 
-
-                    //await Parallel.ForEachAsync(Enumerable.Range(0, total/chunkSize), async (index, token) =>
-                    //{
-                    //    await operate(ctx, index).ConfigureAwait(false);
-                    //    Console.Clear();
-                    //    Console.Write($"Staged {(index + 1) * chunkSize} documents");
-                    //}).ConfigureAwait(false);
-
                         await Parallel.ForEachAsync(Enumerable.Range(0, total), async (index, token) =>
                     {
                         var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
@@ -142,6 +134,13 @@ class StartUsing
 
         
     }
+
+    //await Parallel.ForEachAsync(Enumerable.Range(0, total/chunkSize), async (index, token) =>
+    //{
+    //    await operate(ctx, index).ConfigureAwait(false);
+    //    Console.Clear();
+    //    Console.Write($"Staged {(index + 1) * chunkSize} documents");
+    //}).ConfigureAwait(false);
 
     //     var tasks = new List<Task>();
     //// Define a delegate that prints and returns the system tick count

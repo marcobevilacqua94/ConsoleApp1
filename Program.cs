@@ -86,8 +86,8 @@ class StartUsing
 
         try
         {
-       
 
+            chunkSize = total / Environment.ProcessorCount;
  
                  var watch = Stopwatch.StartNew();
 

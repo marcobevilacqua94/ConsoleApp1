@@ -72,7 +72,7 @@ class StartUsing
            var result = await _transactions.RunAsync( async (ctx) =>
            {
 
-               await Parallel.ForEachAsync(Enumerable.Range(0, 10000), new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount -1 }, async (index, token) =>
+               await Parallel.ForEachAsync(Enumerable.Range(0, 10000), async (index, token) =>
                {
                    var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(true);
                    if (opt == null)

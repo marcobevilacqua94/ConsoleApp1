@@ -44,8 +44,7 @@ class StartUsing
 
         // Create the single Transactions object
         var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
-           .DurabilityLevel(DurabilityLevel.None)
-        .ExpirationTime(TimeSpan.FromSeconds(300))
+        .ExpirationTime(TimeSpan.FromHours(1))
         .Build());
 
         var documento = new
@@ -79,6 +78,8 @@ class StartUsing
                         await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
                     else
                         await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
+                    Console.Write($"Staged {index} documents");
+                    Console.Clear();
                 });
 
             }).ConfigureAwait(false);

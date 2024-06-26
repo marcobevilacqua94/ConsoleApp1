@@ -44,6 +44,7 @@ class StartUsing
 
         // Create the single Transactions object
         var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
+            .DurabilityLevel(DurabilityLevel.None)
         .ExpirationTime(TimeSpan.FromHours(1))
         .Build());
 

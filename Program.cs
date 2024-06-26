@@ -79,8 +79,8 @@ class StartUsing
                         await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
                     else
                         await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
-                    Console.Clear();
-                    Console.Write($"Staged {index} documents");
+      //              Console.Clear();
+        //            Console.Write($"Staged {index} documents");
                 });
 
             }).ConfigureAwait(false);

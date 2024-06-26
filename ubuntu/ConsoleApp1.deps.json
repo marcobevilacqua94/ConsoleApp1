@@ -11,6 +11,7 @@
         "dependencies": {
           "Couchbase.Transactions": "1.1.0",
           "CouchbaseNetClient": "3.6.0",
+          "Microsoft.NET.Build.Containers": "8.0.302",
           "runtimepack.Microsoft.NETCore.App.Runtime.linux-x64": "7.0.5"
         },
         "runtime": {
@@ -962,6 +963,7 @@
           }
         }
       },
+      "Microsoft.NET.Build.Containers/8.0.302": {},
       "Microsoft.NETCore.Platforms/1.1.0": {},
       "NETStandard.Library/2.0.0": {
         "dependencies": {
@@ -1179,6 +1181,13 @@
       "sha512": "sha512-eJuAFVIH9zUZ7j7tCSbJD+tS0dueENIerwoGxFL8RYqCmbEqQ7wVOG+mt2mZAbEpnMPsGl1Fc/HIhWpB9ftwhg==",
       "path": "microsoft.extensions.primitives/3.0.3",
       "hashPath": "microsoft.extensions.primitives.3.0.3.nupkg.sha512"
+    },
+    "Microsoft.NET.Build.Containers/8.0.302": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-jiJ/594umbFh3U809B4t/qNh5Azg7maQtjrLNElT/eXjGwiATAsNNWQqkIqr5V4PsUfVCIoVBcYWfUF/DWBakQ==",
+      "path": "microsoft.net.build.containers/8.0.302",
+      "hashPath": "microsoft.net.build.containers.8.0.302.nupkg.sha512"
     },
     "Microsoft.NETCore.Platforms/1.1.0": {
       "type": "package",

@@ -64,8 +64,8 @@ class StartUsing
             company = "ZILLANET",
             email = "sherriburke@zillanet.com"
         };
+        Console.Write("coiao");
 
-        
         try
        {
            var watch = Stopwatch.StartNew();

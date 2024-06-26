@@ -18,7 +18,8 @@ using System.Numerics;
 Console.WriteLine("Hello, World!");
 
 
-await new StartUsing().Main(args[0], args[1], args[2], args[3], args[4]);
+//await new StartUsing().Main(args[0], args[1], args[2], args[3], args[4]);
+await new StartUsing().Main(args[0], args[1], args[2], args[3]);
 //await new StartUsing().BulkInsertInTxn();
 class StartUsing
 {
@@ -31,10 +32,11 @@ class StartUsing
         return new string(Enumerable.Repeat(chars, length)
             .Select(s => s[random.Next(s.Length)]).ToArray());
     }
-    public async Task Main(string host, string username, string password, string totalS, string chunkSizeS)
+   // public async Task Main(string host, string username, string password, string totalS, string chunkSizeS)
+   public async Task Main(string host, string username, string password, string totalS)
     {
         var total = Int32.Parse(totalS);
-        var chunkSize = Int32.Parse(chunkSizeS);
+        //var chunkSize = Int32.Parse(chunkSizeS);
 
         // Initialize the Couchbase cluster
         // var options = new ClusterOptions().WithCredentials("test", "Pwd12345!");
@@ -67,21 +69,21 @@ class StartUsing
             company = "ZILLANET",
             email = "sherriburke@zillanet.com"
         };
-        chunkSize = total / Environment.ProcessorCount;
+        //chunkSize = total / Environment.ProcessorCount;
 
 
-        async Task operate(AttemptContext ctx, int index)
-        {
-            for (int i = 0; i < chunkSize; i++)
-            {
-                var opt = await ctx.GetOptionalAsync(_collection, (index * chunkSize + i).ToString()).ConfigureAwait(false);
-                if (opt == null)
-                    await ctx.InsertAsync(_collection, (index * chunkSize + i).ToString(), documento).ConfigureAwait(false);
-                else
-                    await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
-            }
+        //async Task operate(AttemptContext ctx, int index)
+        //{
+        //    for (int i = 0; i < chunkSize; i++)
+        //    {
+        //        var opt = await ctx.GetOptionalAsync(_collection, (index * chunkSize + i).ToString()).ConfigureAwait(false);
+        //        if (opt == null)
+        //            await ctx.InsertAsync(_collection, (index * chunkSize + i).ToString(), documento).ConfigureAwait(false);
+        //        else
+        //            await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
+        //    }
 
-        };
+        //};
 
 
 
@@ -96,27 +98,27 @@ class StartUsing
                 {
 
 
-                    await Parallel.ForEachAsync(Enumerable.Range(0, total/chunkSize), async (index, token) =>
-                    {
-                        await operate(ctx, index).ConfigureAwait(false);
-                        Console.Clear();
-                        Console.Write($"Staged {(index + 1) * chunkSize} documents");
-                    }).ConfigureAwait(false);
-
-                    //    await Parallel.ForEachAsync(Enumerable.Range(0, total), async (index, token) =>
+                    //await Parallel.ForEachAsync(Enumerable.Range(0, total/chunkSize), async (index, token) =>
                     //{
-                    //    var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
-                    //    if (opt == null)
-                    //        await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
-                    //    else
-                    //        await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
-
-                    //    if (index % 100 == 0)
-                    //    {
-                    //                     Console.Clear();
-                    //                     Console.Write($"Staged {index} documents");
-                    //    }
+                    //    await operate(ctx, index).ConfigureAwait(false);
+                    //    Console.Clear();
+                    //    Console.Write($"Staged {(index + 1) * chunkSize} documents");
                     //}).ConfigureAwait(false);
+
+                        await Parallel.ForEachAsync(Enumerable.Range(0, total), async (index, token) =>
+                    {
+                        var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
+                        if (opt == null)
+                            await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
+                        else
+                            await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
+
+                        if (index % 100 == 0)
+                        {
+                                         Console.Clear();
+                                         Console.Write($"Staged {index} documents");
+                        }
+                    }).ConfigureAwait(false);
 
                     await ctx.CommitAsync().ConfigureAwait(false);
                 }).ConfigureAwait(false);

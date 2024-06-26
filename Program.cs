@@ -72,6 +72,8 @@ class StartUsing
            var result = await _transactions.RunAsync( async (ctx) =>
            {
 
+
+
                await Parallel.ForEachAsync(Enumerable.Range(0, 10000), new ParallelOptions { MaxDegreeOfParallelism = 2 }, async (index, token) =>
                {
                    var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
@@ -87,7 +89,7 @@ class StartUsing
                    }
                }).ConfigureAwait(false);
 
-           }).ConfigureAwait(false);
+           });
            watch.Stop();
            var elapsedMs = watch.ElapsedMilliseconds;
            Console.WriteLine(elapsedMs / 1000 + "s");

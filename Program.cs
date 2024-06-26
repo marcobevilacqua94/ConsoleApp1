@@ -65,66 +65,66 @@ class StartUsing
             email = "sherriburke@zillanet.com"
         };
 
-
-        //try
-        //{
-        //    var watch = Stopwatch.StartNew();
-        //    var result = await _transactions.RunAsync( async (ctx) =>
-        //    {
-
-        //        await Parallel.ForEachAsync(Enumerable.Range(0, 10000), async (index, token) =>
-        //        {
-        //            var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
-        //            if (opt == null)
-        //                await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
-        //            else
-        //                await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
-        //            if (index % 100 == 0)
-        //            {
-        //                             Console.Clear();
-        //                             Console.Write($"Staged {index} documents");
-        //            }
-        //        });
-
-        //    }).ConfigureAwait(false);
-        //    watch.Stop();
-        //    var elapsedMs = watch.ElapsedMilliseconds;
-        //    Console.WriteLine(elapsedMs / 1000 + "s");
-        //}
-        //catch (TransactionCommitAmbiguousException e)
-        //{
-        //    Console.WriteLine("Transaction possibly committed");
-        //    Console.WriteLine(e);
-        //}
-        //catch (TransactionFailedException e)
-        //{
-        //    Console.WriteLine("Transaction did not reach commit point");
-        //    Console.WriteLine(e);
-        //}
-
-       //Transaction
-       var stopwatch = Stopwatch.StartNew();
-       try
+        
+        try
        {
-           var result = await _transactions.RunAsync(async (ctx) =>
+           var watch = Stopwatch.StartNew();
+           var result = await _transactions.RunAsync( async (ctx) =>
            {
-               for (int i = 0; i < 10_000; i++)
+
+               await Parallel.ForEachAsync(Enumerable.Range(0, 10000), new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount -1 }, async (index, token) =>
                {
-                   await ctx.InsertAsync(_collection, $"testDocument2{i}", documento).ConfigureAwait(false);
-                   Console.Clear();
-                   Console.Write($"Staged {i} documents. Time elapsed: {stopwatch.Elapsed.TotalSeconds}s");
-               }
-               Console.WriteLine($"Staging documents:{stopwatch.Elapsed.TotalSeconds}s, or {stopwatch.Elapsed.TotalMinutes}min");
-               stopwatch.Restart();
-               await ctx.CommitAsync().ConfigureAwait(false);
+                   var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
+                   if (opt == null)
+                       await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
+                   else
+                       await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
+                   if (index % 100 == 0)
+                   {
+                                    Console.Clear();
+                                    Console.Write($"Staged {index} documents");
+                   }
+               });
+
            }).ConfigureAwait(false);
+           watch.Stop();
+           var elapsedMs = watch.ElapsedMilliseconds;
+           Console.WriteLine(elapsedMs / 1000 + "s");
        }
-       catch (Exception e)
+       catch (TransactionCommitAmbiguousException e)
        {
+           Console.WriteLine("Transaction possibly committed");
            Console.WriteLine(e);
        }
-       stopwatch.Stop();
-       Console.WriteLine($"Committing documents:{stopwatch.Elapsed.TotalSeconds}s, or {stopwatch.Elapsed.TotalMinutes}min");
+       catch (TransactionFailedException e)
+       {
+           Console.WriteLine("Transaction did not reach commit point");
+           Console.WriteLine(e);
+       }
+
+       //Transaction
+       //var stopwatch = Stopwatch.StartNew();
+       //try
+       //{
+       //    var result = await _transactions.RunAsync(async (ctx) =>
+       //    {
+       //        for (int i = 0; i < 10_000; i++)
+       //        {
+       //            await ctx.InsertAsync(_collection, $"testDocument2{i}", documento).ConfigureAwait(false);
+       //            Console.Clear();
+       //            Console.Write($"Staged {i} documents. Time elapsed: {stopwatch.Elapsed.TotalSeconds}s");
+       //        }
+       //        Console.WriteLine($"Staging documents:{stopwatch.Elapsed.TotalSeconds}s, or {stopwatch.Elapsed.TotalMinutes}min");
+       //        stopwatch.Restart();
+       //        await ctx.CommitAsync().ConfigureAwait(false);
+       //    }).ConfigureAwait(false);
+       //}
+       //catch (Exception e)
+       //{
+       //    Console.WriteLine(e);
+       //}
+       //stopwatch.Stop();
+       //Console.WriteLine($"Committing documents:{stopwatch.Elapsed.TotalSeconds}s, or {stopwatch.Elapsed.TotalMinutes}min");
 
 
     }

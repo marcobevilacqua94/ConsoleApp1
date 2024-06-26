@@ -133,7 +133,7 @@ class StartUsing
 
                await Parallel.ForEachAsync(Enumerable.Range(0, 100), async (index, token) =>
                {
-                   await operate(ctx, index);
+                   await operate(ctx, index).ConfigureAwait(false);
                    Console.Clear();
                    Console.Write($"Staged {(index + 1) * 100} documents");
                });

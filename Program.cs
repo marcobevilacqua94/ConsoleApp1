@@ -67,6 +67,7 @@ class StartUsing
             company = "ZILLANET",
             email = "sherriburke@zillanet.com"
         };
+        chunkSize = total / Environment.ProcessorCount;
 
 
         async Task operate(AttemptContext ctx, int index)
@@ -87,8 +88,7 @@ class StartUsing
         try
         {
 
-            chunkSize = total / Environment.ProcessorCount;
- 
+            
                  var watch = Stopwatch.StartNew();
 
 

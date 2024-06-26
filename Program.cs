@@ -45,7 +45,7 @@ class StartUsing
         // Create the single Transactions object
         var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
             .DurabilityLevel(DurabilityLevel.None)
-        .ExpirationTime(TimeSpan.FromHours(1))
+        .ExpirationTime(TimeSpan.FromMinutes(15))
         .Build());
 
         var documento = new
@@ -74,11 +74,11 @@ class StartUsing
 
                await Parallel.ForEachAsync(Enumerable.Range(0, 10000), async (index, token) =>
                {
-                   var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(true);
+                   var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
                    if (opt == null)
-                       await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(true);
+                       await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
                    else
-                       await ctx.ReplaceAsync(opt, documento).ConfigureAwait(true);
+                       await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
                    if (index % 100 == 0)
                    {
                                     Console.Clear();

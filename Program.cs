@@ -136,7 +136,7 @@ class StartUsing
                    await operate(ctx, index).ConfigureAwait(false);
                    Console.Clear();
                    Console.Write($"Staged {(index + 1) * 100} documents");
-               });
+               }).ConfigureAwait(false);
 
                //    await Parallel.ForEachAsync(Enumerable.Range(0, 10000), async (index, token) =>
                //{
@@ -153,7 +153,7 @@ class StartUsing
                //    }
                //}).ConfigureAwait(false);
 
-           });
+           }).ConfigureAwait(false);
            watch.Stop();
            var elapsedMs = watch.ElapsedMilliseconds;
            Console.WriteLine(elapsedMs / 1000 + "s");

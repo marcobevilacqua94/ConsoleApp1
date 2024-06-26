@@ -135,13 +135,13 @@ class StartUsing
             var watch = Stopwatch.StartNew();
            var result = await _transactions.RunAsync( async (ctx) =>
            {
-
-               await Parallel.ForEachAsync(Enumerable.Range(0, total/chunkSize), async (index, token) =>
+               
+               Parallel.ForEach(Enumerable.Range(0, total/chunkSize), (index, token) =>
                {
-                   await operate(ctx, index).ConfigureAwait(false);
+                   operate(ctx, index);
                    Console.Clear();
                    Console.Write($"Staged {(index + 1) * chunkSize} documents");
-               }).ConfigureAwait(false);
+               });
 
                //    await Parallel.ForEachAsync(Enumerable.Range(0, 10000), async (index, token) =>
                //{

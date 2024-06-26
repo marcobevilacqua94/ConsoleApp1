@@ -118,9 +118,9 @@ class StartUsing
             //}
 
 
-            async Task operate(AttemptContext ctx, int index)
+            async void operate(AttemptContext ctx, int index)
             {
-                for (int i =0; i < chunkSize; i++)
+                for (int i = 0; i < chunkSize; i++)
                 {
                     var opt = await ctx.GetOptionalAsync(_collection, (index * chunkSize + i).ToString()).ConfigureAwait(false);
                     if (opt == null)
@@ -129,19 +129,27 @@ class StartUsing
                         await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
                 }
 
-            }
+            };
 
+            var tasks = new List<Task>();
+ 
 
             var watch = Stopwatch.StartNew();
-           var result = await _transactions.RunAsync( async (ctx) =>
+
+
+            var result = await _transactions.RunAsync(async (ctx) => 
            {
-               
-               Parallel.ForEach(Enumerable.Range(0, total/chunkSize), (index, token) =>
+               for (int i = 0; i < total / chunkSize; i++)
                {
-                   operate(ctx, index);
-                   Console.Clear();
-                   Console.Write($"Staged {(index + 1) * chunkSize} documents");
-               });
+                   tasks.Add(Task.Factory.StartNew(() => operate(ctx, i)));
+               }
+               Task.WaitAll(tasks.ToArray());
+               //await Parallel.ForEachAsync(Enumerable.Range(0, total/chunkSize), async (index, token) =>
+               //{
+               //    await operate(ctx, index).ConfigureAwait(false);
+               //    Console.Clear();
+               //    Console.Write($"Staged {(index + 1) * chunkSize} documents");
+               //}).ConfigureAwait(false);
 
                //    await Parallel.ForEachAsync(Enumerable.Range(0, 10000), async (index, token) =>
                //{
@@ -157,7 +165,7 @@ class StartUsing
                //                     Console.Write($"Staged {index} documents");
                //    }
                //}).ConfigureAwait(false);
-
+               await ctx.CommitAsync().ConfigureAwait(false);
            }).ConfigureAwait(false);
            watch.Stop();
            var elapsedMs = watch.ElapsedMilliseconds;

@@ -103,20 +103,20 @@ class StartUsing
                         Console.Write($"Staged {(index + 1) * chunkSize} documents");
                     }).ConfigureAwait(false);
 
-                        await Parallel.ForEachAsync(Enumerable.Range(0, 10000), async (index, token) =>
-                    {
-                        var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
-                        if (opt == null)
-                            await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
-                        else
-                            await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
-                        Console.Write(index);
-                        if (index % 100 == 0)
-                        {
-                                         Console.Clear();
-                                         Console.Write($"Staged {index} documents");
-                        }
-                    }).ConfigureAwait(false);
+                    //    await Parallel.ForEachAsync(Enumerable.Range(0, 10000), async (index, token) =>
+                    //{
+                    //    var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
+                    //    if (opt == null)
+                    //        await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
+                    //    else
+                    //        await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
+
+                    //    if (index % 100 == 0)
+                    //    {
+                    //                     Console.Clear();
+                    //                     Console.Write($"Staged {index} documents");
+                    //    }
+                    //}).ConfigureAwait(false);
 
                     await ctx.CommitAsync().ConfigureAwait(false);
                 }).ConfigureAwait(false);

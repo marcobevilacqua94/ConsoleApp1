@@ -64,7 +64,6 @@ class StartUsing
             company = "ZILLANET",
             email = "sherriburke@zillanet.com"
         };
-        Console.Write("coiao");
 
         try
        {
@@ -116,17 +115,15 @@ class StartUsing
             //}
             async Task operate(AttemptContext ctx, int index)
             {
-                var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
-                if (opt == null)
-                    await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
-                else
-                    await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
-                Console.Write(index);
-                if (index % 100 == 0)
+                for (int i =0; i < 100; i++)
                 {
-                    Console.Clear();
-                    Console.Write($"Staged {index} documents");
+                    var opt = await ctx.GetOptionalAsync(_collection, (index * 100 + i).ToString()).ConfigureAwait(false);
+                    if (opt == null)
+                        await ctx.InsertAsync(_collection, (index * 100 + i).ToString(), documento).ConfigureAwait(false);
+                    else
+                        await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
                 }
+
             }
 
 
@@ -134,9 +131,11 @@ class StartUsing
            var result = await _transactions.RunAsync( async (ctx) =>
            {
 
-               await Parallel.ForEachAsync(Enumerable.Range(0, 10000), async (index, token) =>
+               await Parallel.ForEachAsync(Enumerable.Range(0, 100), async (index, token) =>
                {
                    await operate(ctx, index);
+                   Console.Clear();
+                   Console.Write($"Staged {(index + 1) * 100} documents");
                });
 
                //    await Parallel.ForEachAsync(Enumerable.Range(0, 10000), async (index, token) =>

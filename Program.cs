@@ -84,7 +84,7 @@ class StartUsing
                                     Console.Clear();
                                     Console.Write($"Staged {index} documents");
                    }
-               });
+               }).ConfigureAwait(false);
 
            }).ConfigureAwait(false);
            watch.Stop();

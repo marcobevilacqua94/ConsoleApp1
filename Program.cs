@@ -3,6 +3,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection.Metadata;
+using System.Runtime.Intrinsics.X86;
 using System.Transactions;
 using Couchbase;
 using Couchbase.KeyValue;
@@ -128,7 +129,10 @@ internal class StartUsing
             }
             }
         }
-            );
+            
+
+    );
+
 
 
 

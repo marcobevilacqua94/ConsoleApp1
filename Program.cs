@@ -128,6 +128,7 @@ internal class StartUsing
                     Console.WriteLine($"Total time elapsed - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
                     IQueryResult<object> qr = await ctx.QueryAsync<object>(st,
                         scope: scope);
+                    await bucket.WaitUntilReadyAsync(TimeSpan.FromSeconds(20));
             }
             }
         }

@@ -1,8 +1,12 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using System.Diagnostics;
+using System.Globalization;
+using System.Reflection.Metadata;
+using System.Transactions;
 using Couchbase;
 using Couchbase.KeyValue;
+using Couchbase.Query;
 using Couchbase.Transactions;
 using Couchbase.Transactions.Config;
 using Couchbase.Transactions.Error;
@@ -28,11 +32,11 @@ internal class StartUsing
             .Select(s => s[random.Next(s.Length)]).ToArray());
     }
 
-    public async Task Main(string host, string username, string password, string totalS, string sizeS, string parallelismS, string expTimeS)
+    public async Task Main(string host, string username, string password, string totalS, string sizeS, string queryChunkS, string expTimeS)
     {
         var total = int.Parse(totalS);
         var expTime = int.Parse(expTimeS);
-        var parallelism = int.Parse(parallelismS);
+        var queryChunk = int.Parse(queryChunkS);
         var documento = new
         {
             _id = "667bfaddb0463c180d804cc9",
@@ -50,44 +54,11 @@ internal class StartUsing
             email = "sherriburke@zillanet.com"
         };
 
-        await ExecuteInTransactionAsync(username, password, host, total, documento, parallelism, expTime);
+        await ExecuteInTransactionAsync(username, password, host, total, documento, queryChunk, expTime);
 
     }
 
-    public async Task updateDocs(string i, ICluster cluster, AttemptContext ctx, object documento, int total, int parallelism)
-    {
-        var bucket = await cluster.BucketAsync("test").ConfigureAwait(false);
-        var scope = await bucket.ScopeAsync("test").ConfigureAwait(false);
-        var _collection = await scope.CollectionAsync("test" + i).ConfigureAwait(false);
-
-        var tasks = new List<Task>();
-        var stopWatch = Stopwatch.StartNew();
-
-        var options = new ParallelOptions { MaxDegreeOfParallelism = parallelism };
-        await Parallel.ForEachAsync(Enumerable.Range(0, total), options, async (index, token) =>
-        {
-            var opt = await ctx.GetOptionalAsync(_collection, index.ToString());
-            if (opt != default)
-            {
-                await ctx.ReplaceAsync(opt, documento);
-            }
-            else
-            {
-                await ctx.InsertAsync(_collection, index.ToString(), documento);
-            }
-
-            if (index % 100 == 0)
-            {
-                Console.WriteLine($"Collection {i}, Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
-            }
-
-        });
-
-    }
-
-
-
-    public async Task<string> ExecuteInTransactionAsync(string username, string password, string host, int total, object documento, int parallelism, int expTime)
+    public async Task<string> ExecuteInTransactionAsync(string username, string password, string host, int total, object documento, int queryChunk, int expTime)
     {
         var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l > LogLevel.Information).AddConsole(); });
         var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");
@@ -104,52 +75,63 @@ internal class StartUsing
             .CleanupLostAttempts(true)
             .CleanupClientAttempts(true)
             .MetadataCollection(metadata_collection)
-            .CleanupWindow(TimeSpan.FromSeconds(1))
+            .CleanupWindow(TimeSpan.FromSeconds(30))
             .Build());
 
 
         var watch = Stopwatch.StartNew();
 
-        while (true)
+        var scope = await bucket.ScopeAsync("test").ConfigureAwait(false);
+
+
+        var tasks = new List<Task>();
+        var stopWatch = Stopwatch.StartNew();
+
+        var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+
+        for (var i = 0; i <= 3; i++)
         {
-            try
-            {
-                var result = await _transactions.RunAsync(async ctx =>
+            var _collection = await scope.CollectionAsync("test" + i).ConfigureAwait(false);
+            await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
+            // for (int index = 0; index < total; index ++)
                 {
+                    var result = await _collection.UpsertAsync(index.ToString() + "-" + i, documento,
+                            options =>
+                            {
+                                options.Timeout(TimeSpan.FromSeconds(10));
+                            }
+                        );
 
-                    for (var i = 0; i <= 3; i++)
+                    if (index % 100 == 0)
                     {
-
-                        await updateDocs(i.ToString(), cluster, ctx, documento, total, parallelism);
+                        Console.WriteLine($"Collection {i}, Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
                     }
-                    
                 });
-                break;
-            }
-
-            catch (TransactionOperationFailedException e)
-            {
-                logger.LogError("Transaction operation failed " + e.Message);
-            }
-            catch (TransactionCommitAmbiguousException e)
-            {
-                logger.LogError("Transaction possibly committed " + e.Message);
-            }
-            catch (TransactionExpiredException e)
-            {
-                logger.LogError("Transaction expired, trying again " + e.Message);
-            }
-            catch (TransactionFailedException e)
-            {
-                logger.LogError("Transaction did not reach commit point " + e.Message);
-            }
-            
         }
-    
-            
+
+
+        var transactionResult = await _transactions.RunAsync(async ctx =>
+        {
+
+            for (var i = 0; i <= 3; i++)
+            {
+                var keys = Enumerable.Range(0, total).Select(n => n.ToString() + "-" + i).ToArray<string>();
+                var numChunks = total / queryChunk;
+                for (int j = 0; j <= numChunks && (queryChunk * j < total); j++) { 
+                    var keysString = "'" + string.Join("', '", keys.Skip(queryChunk*j).Take(queryChunk)) + "'";
+                    var st = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test" + i + " as t USE KEYS [" + keysString + "]";
+                    Console.WriteLine(st);
+                    IQueryResult<object> qr = await ctx.QueryAsync<object>(st,
+                        scope: scope);
+            }
+            }
+        }
+            );
+
+
+
         watch.Stop();
         var elapsedMs = watch.ElapsedMilliseconds;
-        Console.Clear();
         Console.WriteLine(elapsedMs / 1000 + "s");
         return new string("ciao");
 

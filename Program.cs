@@ -124,11 +124,13 @@ internal class StartUsing
                     var keysString = "'" + string.Join("', '", keys.Skip(queryChunk*j).Take(queryChunk)) + "'";
                     var st = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test" + i + " as t USE KEYS [" + keysString + "]";
                     Console.WriteLine(st);
+                    Console.WriteLine($"Elapsed - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
                     IQueryResult<object> qr = await ctx.QueryAsync<object>(st,
                         scope: scope);
             }
             }
         }
+
             
 
     );

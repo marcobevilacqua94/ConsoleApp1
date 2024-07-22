@@ -1,30 +1,25 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using System;
-using System.Threading.Tasks;
-using Couchbase;
-using Couchbase.Transactions.Config;
-using Couchbase.Transactions;
-using Couchbase.Transactions.Error;
-using System.Text.Json;
-using Couchbase.KeyValue;
-using System.Reflection.Metadata;
-using Google.Api;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Xml.Linq;
+
 using System.Diagnostics;
-using System.Numerics;
+using Couchbase;
+using Couchbase.KeyValue;
+using Couchbase.Transactions;
+using Couchbase.Transactions.Config;
+using Couchbase.Transactions.Error;
+using Couchbase.Transactions.Error.External;
+using Microsoft.Extensions.Logging;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 Console.WriteLine("Hello, World!");
 
+// args are connection string, username, password, number of docs to import, number of chars in body attribute in the doc
+// on the cluster create "test" bucket, "test" scope, "test" "test0" "test1" "test2" "test3" collections 
+await new StartUsing().Main(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
 
-//await new StartUsing().Main(args[0], args[1], args[2], args[3], args[4]);
-await new StartUsing().Main(args[0], args[1], args[2], args[3]);
 //await new StartUsing().BulkInsertInTxn();
-class StartUsing
+internal class StartUsing
 {
-
-    private static Random random = new Random();
+    private static readonly Random random = new();
 
     public static string RandomString(int length)
     {
@@ -32,27 +27,12 @@ class StartUsing
         return new string(Enumerable.Repeat(chars, length)
             .Select(s => s[random.Next(s.Length)]).ToArray());
     }
-   // public async Task Main(string host, string username, string password, string totalS, string chunkSizeS)
-   public async Task Main(string host, string username, string password, string totalS)
+
+    public async Task Main(string host, string username, string password, string totalS, string sizeS, string parallelismS, string expTimeS)
     {
-        var total = Int32.Parse(totalS);
-        //var chunkSize = Int32.Parse(chunkSizeS);
-
-        // Initialize the Couchbase cluster
-        // var options = new ClusterOptions().WithCredentials("test", "Pwd12345!");
-        var options = new ClusterOptions().WithCredentials(username, password);
-      // var cluster = await Cluster.ConnectAsync("couchbases://cb.oafqjrqaclzjpn68.cloud.couchbase.com", options).ConfigureAwait(false);
-       var cluster = await Cluster.ConnectAsync(host, options).ConfigureAwait(false);
-        var bucket = await cluster.BucketAsync("test").ConfigureAwait(false);
-        var scope = await bucket.ScopeAsync("test").ConfigureAwait(false);
-        var _collection = await scope.CollectionAsync("test").ConfigureAwait(false);
-
-        // Create the single Transactions object
-        var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
-            .DurabilityLevel(DurabilityLevel.None)
-        .ExpirationTime(TimeSpan.FromHours(1))
-        .Build());
-
+        var total = int.Parse(totalS);
+        var expTime = int.Parse(expTimeS);
+        var parallelism = int.Parse(parallelismS);
         var documento = new
         {
             _id = "667bfaddb0463c180d804cc9",
@@ -62,210 +42,117 @@ class StartUsing
             balance = "$1,022.47",
             picture = "http=//placehold.it/32x32",
             age = 39,
-            body = RandomString(270000),
+            body = RandomString(int.Parse(sizeS)),
             eyeColor = "brown",
             name = "Sherri Burke",
             gender = "female",
             company = "ZILLANET",
             email = "sherriburke@zillanet.com"
         };
-        //chunkSize = total / Environment.ProcessorCount;
 
+        await ExecuteInTransactionAsync(username, password, host, total, documento, parallelism, expTime);
 
-        //async Task operate(AttemptContext ctx, int index)
-        //{
-        //    for (int i = 0; i < chunkSize; i++)
-        //    {
-        //        var opt = await ctx.GetOptionalAsync(_collection, (index * chunkSize + i).ToString()).ConfigureAwait(false);
-        //        if (opt == null)
-        //            await ctx.InsertAsync(_collection, (index * chunkSize + i).ToString(), documento).ConfigureAwait(false);
-        //        else
-        //            await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
-        //    }
+    }
 
-        //};
+    public async Task updateDocs(string i, ICluster cluster, AttemptContext ctx, object documento, int total, int parallelism)
+    {
+        var bucket = await cluster.BucketAsync("test").ConfigureAwait(false);
+        var scope = await bucket.ScopeAsync("test").ConfigureAwait(false);
+        var _collection = await scope.CollectionAsync("test" + i).ConfigureAwait(false);
 
+        var tasks = new List<Task>();
+        var stopWatch = Stopwatch.StartNew();
 
-
-        try
+        var options = new ParallelOptions { MaxDegreeOfParallelism = parallelism };
+        await Parallel.ForEachAsync(Enumerable.Range(0, total), options, async (index, token) =>
         {
+            var opt = await ctx.GetOptionalAsync(_collection, index.ToString());
+            if (opt != default)
+            {
+                await ctx.ReplaceAsync(opt, documento);
+            }
+            else
+            {
+                await ctx.InsertAsync(_collection, index.ToString(), documento);
+            }
 
-            
-                 var watch = Stopwatch.StartNew();
+            if (index % 100 == 0)
+            {
+                Console.WriteLine($"Collection {i}, Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
+            }
+
+        });
+
+    }
 
 
-                 var result = await _transactions.RunAsync(async (ctx) => 
+
+    public async Task<string> ExecuteInTransactionAsync(string username, string password, string host, int total, object documento, int parallelism, int expTime)
+    {
+        var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l > LogLevel.Information).AddConsole(); });
+        var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");
+
+        var options = new ClusterOptions().WithCredentials(username, password).WithLogging(loggerFactory);
+        var cluster = await Cluster.ConnectAsync(host, options).ConfigureAwait(false);
+        var bucket = await cluster.BucketAsync("test");
+        var metadata_scope = await bucket.ScopeAsync("test");
+        var metadata_collection = await metadata_scope.CollectionAsync("test");
+        var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
+            .DurabilityLevel(DurabilityLevel.None)
+            .ExpirationTime(TimeSpan.FromSeconds(expTime))
+            .LoggerFactory(loggerFactory)
+            .CleanupLostAttempts(true)
+            .CleanupClientAttempts(true)
+            .MetadataCollection(metadata_collection)
+            .CleanupWindow(TimeSpan.FromSeconds(1))
+            .Build());
+
+
+        var watch = Stopwatch.StartNew();
+
+        while (true)
+        {
+            try
+            {
+                var result = await _transactions.RunAsync(async ctx =>
                 {
 
-                        await Parallel.ForEachAsync(Enumerable.Range(0, total), async (index, token) =>
+                    for (var i = 0; i <= 3; i++)
                     {
-                        var opt = await ctx.GetOptionalAsync(_collection, index.ToString()).ConfigureAwait(false);
-                        if (opt == null)
-                            await ctx.InsertAsync(_collection, index.ToString(), documento).ConfigureAwait(false);
-                        else
-                            await ctx.ReplaceAsync(opt, documento).ConfigureAwait(false);
 
-                        if (index % 100 == 0)
-                        {
-                                         Console.Clear();
-                                         Console.Write($"Staged {index} documents");
-                        }
-                    }).ConfigureAwait(false);
+                        await updateDocs(i.ToString(), cluster, ctx, documento, total, parallelism);
+                    }
+                    
+                });
+                break;
+            }
 
-                    await ctx.CommitAsync().ConfigureAwait(false);
-                }).ConfigureAwait(false);
-                watch.Stop();
-                var elapsedMs = watch.ElapsedMilliseconds;
-                Console.Clear();
-                Console.WriteLine(elapsedMs / 1000 + "s");
+            catch (TransactionOperationFailedException e)
+            {
+                logger.LogError("Transaction operation failed " + e.Message);
             }
             catch (TransactionCommitAmbiguousException e)
             {
-                Console.WriteLine("Transaction possibly committed");
-                Console.WriteLine(e);
+                logger.LogError("Transaction possibly committed " + e.Message);
+            }
+            catch (TransactionExpiredException e)
+            {
+                logger.LogError("Transaction expired, trying again " + e.Message);
             }
             catch (TransactionFailedException e)
             {
-                Console.WriteLine("Transaction did not reach commit point");
-                Console.WriteLine(e);
+                logger.LogError("Transaction did not reach commit point " + e.Message);
             }
-
             
+        }
+    
+            
+        watch.Stop();
+        var elapsedMs = watch.ElapsedMilliseconds;
+        Console.Clear();
+        Console.WriteLine(elapsedMs / 1000 + "s");
+        return new string("ciao");
 
-        
     }
 
-    //await Parallel.ForEachAsync(Enumerable.Range(0, total/chunkSize), async (index, token) =>
-    //{
-    //    await operate(ctx, index).ConfigureAwait(false);
-    //    Console.Clear();
-    //    Console.Write($"Staged {(index + 1) * chunkSize} documents");
-    //}).ConfigureAwait(false);
-
-    //     var tasks = new List<Task>();
-    //// Define a delegate that prints and returns the system tick count
-    //Func<object, int> action = (object ctx) =>
-    //{
-    //    int i = (int)obj;
-
-    //    // Make each thread sleep a different time in order to return a different tick count
-    //    Thread.Sleep(i * 100);
-
-    //    // The tasks that receive an argument between 2 and 5 throw exceptions
-    //    if (2 <= i && i <= 5)
-    //    {
-    //        throw new InvalidOperationException("SIMULATED EXCEPTION");
-    //    }
-
-    //    int tickCount = Environment.TickCount;
-    //    Console.WriteLine("Task={0}, i={1}, TickCount={2}, Thread={3}", Task.CurrentId, i, tickCount, Thread.CurrentThread.ManagedThreadId);
-
-    //    return tickCount;
-    //};
-
-    //// Construct started tasks
-    //for (int i = 0; i < 10; i++)
-    //{
-    //    int index = i;
-    //    tasks.Add(Task<int>.Factory.StartNew(action, index));
-    //}
-
-    //try
-    //{
-    //    // Wait for all the tasks to finish.
-    //    Task.WaitAll(tasks.ToArray());
-
-    //    // We should never get to this point
-    //    Console.WriteLine("WaitAll() has not thrown exceptions. THIS WAS NOT EXPECTED.");
-    //}
-    //catch (AggregateException e)
-    //{
-    //    Console.WriteLine("\nThe following exceptions have been thrown by WaitAll(): (THIS WAS EXPECTED)");
-    //    for (int j = 0; j < e.InnerExceptions.Count; j++)
-    //    {
-    //        Console.WriteLine("\n-------------------------------------------------\n{0}", e.InnerExceptions[j].ToString());
-    //    }
-    //}
-
-
-    //for (int i = 0; i < total / chunkSize; i++)
-    //{
-    //    tasks.Add(Task.Factory.StartNew(() => operate(ctx, i)));
-    //}
-    //Task.WaitAll(tasks.ToArray());
-
-
-    //Transaction
-    //var stopwatch = Stopwatch.StartNew();
-    //try
-    //{
-    //    var result = await _transactions.RunAsync(async (ctx) =>
-    //    {
-    //        for (int i = 0; i < 10_000; i++)
-    //        {
-    //            await ctx.InsertAsync(_collection, $"testDocument2{i}", documento).ConfigureAwait(false);
-    //            Console.Clear();
-    //            Console.Write($"Staged {i} documents. Time elapsed: {stopwatch.Elapsed.TotalSeconds}s");
-    //        }
-    //        Console.WriteLine($"Staging documents:{stopwatch.Elapsed.TotalSeconds}s, or {stopwatch.Elapsed.TotalMinutes}min");
-    //        stopwatch.Restart();
-    //        await ctx.CommitAsync().ConfigureAwait(false);
-    //    }).ConfigureAwait(false);
-    //}
-    //catch (Exception e)
-    //{
-    //    Console.WriteLine(e);
-    //}
-    //stopwatch.Stop();
-    //Console.WriteLine($"Committing documents:{stopwatch.Elapsed.TotalSeconds}s, or {stopwatch.Elapsed.TotalMinutes}min");
-
-    //public async Task BulkInsertInTxn()
-    //{
-    //    //Connecting to cluster
-    //    var clusterOptions = new ClusterOptions
-    //    {
-    //        UserName = "Administrator",
-    //        Password = "password",
-    //        ConnectionString = "couchbase://localhost"
-    //    };
-    //    var cluster = await Cluster.ConnectAsync(clusterOptions).ConfigureAwait(false);
-    //    // Initialize the Couchbase cluster
-    // //   var options = new ClusterOptions().WithCredentials("test", "Pwd12345!");
-    //    // var options = new ClusterOptions().WithCredentials("Administrator", "password");
-    // //   var cluster = await Cluster.ConnectAsync("couchbases://cb.oafqjrqaclzjpn68.cloud.couchbase.com", options).ConfigureAwait(false);
-    //    // var cluster = await Cluster.ConnectAsync("couchbase://localhost", options).ConfigureAwait(false);
-    //    var bucket = await cluster.BucketAsync("test").ConfigureAwait(false);
-    //    var scope = await bucket.ScopeAsync("test").ConfigureAwait(false);
-    //    var _collection = await scope.CollectionAsync("test").ConfigureAwait(false);
-    //    //--------------------------------------
-
-    //    // Creating a 250KB document
-    //    var doc = new { Content = new string('A', 260 * 1024) };
-    //    //--------------------------------------
-
-    //    //Transaction
-    //    var transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create().ExpirationTime(TimeSpan.FromMinutes(25)));
-    //    var stopwatch = Stopwatch.StartNew();
-    //    try
-    //    {
-    //        var result = await transactions.RunAsync(async (ctx) =>
-    //        {
-    //            for (int i = 0; i < 150_000; i++)
-    //            {
-    //                await ctx.InsertAsync(_collection, $"testDocument2{i}", doc).ConfigureAwait(false);
-    //                Console.Clear();
-    //                Console.Write($"Staged {i} documents. Time elapsed: {stopwatch.Elapsed.TotalSeconds}s");
-    //            }
-    //            Console.WriteLine($"Staging documents:{stopwatch.Elapsed.TotalSeconds}s, or {stopwatch.Elapsed.TotalMinutes}min");
-    //            stopwatch.Restart();
-    //            await ctx.CommitAsync().ConfigureAwait(false);
-    //        }).ConfigureAwait(false);
-    //    }
-    //    catch (Exception e)
-    //    {
-    //        Console.WriteLine(e);
-    //    }
-    //    stopwatch.Stop();
-    //    Console.WriteLine($"Committing documents:{stopwatch.Elapsed.TotalSeconds}s, or {stopwatch.Elapsed.TotalMinutes}min");
-    //}
 }

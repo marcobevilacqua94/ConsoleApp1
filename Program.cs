@@ -127,6 +127,7 @@ internal class StartUsing
                     Console.WriteLine($"Transaction time elapsed - {stopWatch1.Elapsed.TotalSeconds:0.00}secs");
                     Console.WriteLine($"Total time elapsed - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
                     IQueryResult<object> qr = await ctx.QueryAsync<object>(st,
+                        options: new TransactionQueryOptions().Timeout(TimeSpan.FromSeconds(360)),
                         scope: scope);
                     await bucket.WaitUntilReadyAsync(TimeSpan.FromSeconds(20));
             }

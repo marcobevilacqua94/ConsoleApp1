@@ -110,9 +110,9 @@ internal class StartUsing
                         }
                     });
          }
-        
 
 
+        var stopWatch1 = Stopwatch.StartNew();
         var transactionResult = await _transactions.RunAsync(async ctx =>
         {
 
@@ -124,18 +124,19 @@ internal class StartUsing
                     var keysString = "'" + string.Join("', '", keys.Skip(queryChunk*j).Take(queryChunk)) + "'";
                     var st = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test" + i + " as t USE KEYS [" + keysString + "]";
                     Console.WriteLine(st);
-                    Console.WriteLine($"Elapsed - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
+                    Console.WriteLine($"Transaction time elapsed - {stopWatch1.Elapsed.TotalSeconds:0.00}secs");
+                    Console.WriteLine($"Total time elapsed - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
                     IQueryResult<object> qr = await ctx.QueryAsync<object>(st,
                         scope: scope);
             }
             }
         }
-
+        
             
 
     );
 
-
+        Console.WriteLine($"Total transaction time elapsed - {stopWatch1.Elapsed.TotalSeconds:0.00}secs");
 
 
         watch.Stop();

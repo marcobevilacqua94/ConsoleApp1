@@ -88,26 +88,28 @@ internal class StartUsing
         var stopWatch = Stopwatch.StartNew();
 
         var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-
-        for (var i = 0; i <= 3; i++)
+        await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index1, token1) =>
         {
-            var _collection = await scope.CollectionAsync("test" + i).ConfigureAwait(false);
-            await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
-            // for (int index = 0; index < total; index ++)
-                {
-                    var result = await _collection.UpsertAsync(index.ToString() + "-" + i, documento,
-                            options =>
-                            {
-                                options.Timeout(TimeSpan.FromSeconds(10));
-                            }
-                        );
-
-                    if (index % 100 == 0)
+            for (var i = 0; i <= 3; i++)
+            {
+                var _collection = await scope.CollectionAsync("test" + i).ConfigureAwait(false);
+                await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
+                // for (int index = 0; index < total; index ++)
                     {
-                        Console.WriteLine($"Collection {i}, Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
-                    }
-                });
-        }
+                        var result = await _collection.UpsertAsync(index.ToString() + "-" + i, documento,
+                                options =>
+                                {
+                                    options.Timeout(TimeSpan.FromSeconds(10));
+                                }
+                            );
+
+                        if (index % 100 == 0)
+                        {
+                            Console.WriteLine($"Collection {i}, Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
+                        }
+                    });
+            }
+        });
 
 
         var transactionResult = await _transactions.RunAsync(async ctx =>

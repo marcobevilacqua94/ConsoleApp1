@@ -88,10 +88,10 @@ internal class StartUsing
         var stopWatch = Stopwatch.StartNew();
 
         var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-        await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index1, token1) =>
+        await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (i, token1) =>
         {
-            for (var i = 0; i <= 3; i++)
-            {
+         //   for (var i = 0; i <= 3; i++)
+           // {
                 var _collection = await scope.CollectionAsync("test" + i).ConfigureAwait(false);
                 await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
                 // for (int index = 0; index < total; index ++)
@@ -108,7 +108,7 @@ internal class StartUsing
                             Console.WriteLine($"Collection {i}, Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
                         }
                     });
-            }
+          //  }
         });
 
 

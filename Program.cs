@@ -57,7 +57,7 @@ internal class StartUsing
             email = "sherriburke@zillanet.com"
         };
 
-        await ExecuteInTransactionAsync(username, password, host, total, documento, queryChunk, expTime);
+        await Execute(username, password, host, total, documento, queryChunk, expTime);
 
     }
 

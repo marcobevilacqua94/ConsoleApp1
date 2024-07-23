@@ -110,33 +110,52 @@ internal class StartUsing
                         }
                     });
          }
-
-
         var stopWatch1 = Stopwatch.StartNew();
-        var transactionResult = await _transactions.RunAsync(async ctx =>
+        try
         {
-
-            for (var i = 0; i <= 3; i++)
+           
+            var transactionResult = await _transactions.RunAsync(async ctx =>
             {
-                var keys = Enumerable.Range(0, total).Select(n => n.ToString() + "-" + i).ToArray<string>();
-                var numChunks = total / queryChunk;
-                for (int j = 0; j <= numChunks && (queryChunk * j < total); j++) { 
-                    var keysString = "'" + string.Join("', '", keys.Skip(queryChunk*j).Take(queryChunk)) + "'";
-                    var st = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test" + i + " as t USE KEYS [" + keysString + "]";
-                    Console.WriteLine(st);
-                    Console.WriteLine($"Transaction time elapsed - {stopWatch1.Elapsed.TotalSeconds:0.00}secs");
-                    Console.WriteLine($"Total time elapsed - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
-                    IQueryResult<object> qr = await ctx.QueryAsync<object>(st,
-                        options: new TransactionQueryOptions().Timeout(TimeSpan.FromSeconds(360)),
-                        scope: scope);
-                    await bucket.WaitUntilReadyAsync(TimeSpan.FromSeconds(20));
-            }
-            }
+
+                for (var i = 0; i <= 3; i++)
+                {
+                    var keys = Enumerable.Range(0, total).Select(n => n.ToString() + "-" + i).ToArray<string>();
+                    var numChunks = total / queryChunk;
+                    for (int j = 0; j <= numChunks && (queryChunk * j < total); j++)
+                    {
+                        var keysString = "'" + string.Join("', '", keys.Skip(queryChunk * j).Take(queryChunk)) + "'";
+                        var st = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test" + i + " as t USE KEYS [" + keysString + "]";
+                        Console.WriteLine(st);
+                        Console.WriteLine($"Transaction time elapsed - {stopWatch1.Elapsed.TotalSeconds:0.00}secs");
+                        Console.WriteLine($"Total time elapsed - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
+                        IQueryResult<object> qr = await ctx.QueryAsync<object>(st,
+                            options: new TransactionQueryOptions().Timeout(TimeSpan.FromSeconds(360)),
+                            scope: scope);
+                        await bucket.WaitUntilReadyAsync(TimeSpan.FromSeconds(20));
+                    }
+                }
+            });
+        } 
+        catch (TransactionOperationFailedException e)
+        {
+            logger.LogError("Transaction operation failed " + e.Message);
         }
-        
+        catch (TransactionCommitAmbiguousException e)
+        {
+            logger.LogError("Transaction possibly committed " + e.Message);
+        }
+        catch (TransactionExpiredException e)
+        {
+            logger.LogError("Transaction expired, trying again " + e.Message);
+        }
+        catch (TransactionFailedException e)
+        {
+            logger.LogError("Transaction did not reach commit point " + e.Message);
+        }
+
             
 
-    );
+    
 
         Console.WriteLine($"Total transaction time elapsed - {stopWatch1.Elapsed.TotalSeconds:0.00}secs");
 

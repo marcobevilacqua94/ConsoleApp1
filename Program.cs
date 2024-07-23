@@ -132,9 +132,9 @@ internal class StartUsing
                         IQueryResult<object> qr = await ctx.QueryAsync<object>(st,
                          
                             scope: scope);
-                 
-                      //  await bucket.WaitUntilReadyAsync(TimeSpan.FromSeconds(10));
-                        
+                        await ctx.CommitAsync();
+                        //  await bucket.WaitUntilReadyAsync(TimeSpan.FromSeconds(10));
+
                     }
                     
                 }

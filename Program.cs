@@ -4,8 +4,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Runtime.Intrinsics.X86;
+using System.Security.Cryptography;
 using System.Transactions;
 using Couchbase;
+using Couchbase.Core.Exceptions.KeyValue;
 using Couchbase.KeyValue;
 using Couchbase.Query;
 using Couchbase.Transactions;
@@ -58,6 +60,107 @@ internal class StartUsing
         await ExecuteInTransactionAsync(username, password, host, total, documento, queryChunk, expTime);
 
     }
+
+
+    public async Task<string> Execute(string username, string password, string host, int total, object documento, int queryChunk, int expTime)
+    {
+        var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l >= LogLevel.Information).AddConsole(); });
+        var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");
+
+        var options = new ClusterOptions().WithCredentials(username, password).WithLogging(loggerFactory);
+        var cluster = await Cluster.ConnectAsync(host, options).ConfigureAwait(false);
+        var bucket = await cluster.BucketAsync("test");
+        var scope = await bucket.ScopeAsync("test");
+        var lockCollection = await scope.CollectionAsync("lock");
+        
+        var lockDocument = new { status = "pending_operation", client = "myclient" };
+        try
+        {
+            await lockCollection.InsertAsync("lock", lockDocument);
+            Console.WriteLine("Lock set");
+        }
+        catch (DocumentExistsException)
+        {
+            Console.WriteLine("Pending operation");
+            return "ciao";
+        }
+
+        var watch = Stopwatch.StartNew();
+
+        
+
+
+        var tasks = new List<Task>();
+        var stopWatch = Stopwatch.StartNew();
+
+        var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 2 };
+
+        for (var i = 0; i <= 0; i++)
+        {
+            var _collection = await scope.CollectionAsync("test" + i).ConfigureAwait(false);
+            await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
+            {
+                var result = await _collection.UpsertAsync(index.ToString() + "-" + i, documento,
+                        options =>
+                        {
+                            options.Timeout(TimeSpan.FromSeconds(10));
+                        }
+                    );
+
+                if (index % 100 == 0)
+                {
+                    Console.WriteLine($"Collection {i}, Inserted {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
+                }
+            });
+        }
+        var stopWatch1 = Stopwatch.StartNew();
+
+
+        var lockResult = await lockCollection.GetAsync("lock");
+        var lockDocument1 = lockResult.ContentAs<dynamic>();
+        if(lockDocument1.client == "myclient")
+        {
+            await lockCollection.RemoveAsync("lock");
+            Console.WriteLine("Lock removed");
+        }
+        
+
+
+        Console.WriteLine($"Total time elapsed - {stopWatch1.Elapsed.TotalSeconds:0.00}secs");
+
+
+        watch.Stop();
+        var elapsedMs = watch.ElapsedMilliseconds;
+        Console.WriteLine(elapsedMs / 1000 + "s");
+        return new string("ciao");
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public async Task<string> ExecuteInTransactionAsync(string username, string password, string host, int total, object documento, int queryChunk, int expTime)
     {
@@ -132,7 +235,7 @@ internal class StartUsing
                         IQueryResult<object> qr = await ctx.QueryAsync<object>(st,
                          
                             scope: scope);
-                        await ctx.CommitAsync();
+      
                         //  await bucket.WaitUntilReadyAsync(TimeSpan.FromSeconds(10));
 
                     }

@@ -73,8 +73,8 @@ internal class StartUsing
             .DurabilityLevel(DurabilityLevel.None)
             .ExpirationTime(TimeSpan.FromSeconds(expTime))
             .LoggerFactory(loggerFactory)
-            .CleanupLostAttempts(false)
-            .CleanupClientAttempts(false)
+            .CleanupLostAttempts(true)
+            .CleanupClientAttempts(true)
             .MetadataCollection(metadata_collection)
             .CleanupWindow(TimeSpan.FromSeconds(30))
             .Build());
@@ -132,7 +132,9 @@ internal class StartUsing
                             options: new TransactionQueryOptions().Timeout(TimeSpan.FromSeconds(360)),
                             scope: scope);
                         await bucket.WaitUntilReadyAsync(TimeSpan.FromSeconds(10));
+                        
                     }
+                    await ctx.CommitAsync();
                 }
             });
         } 

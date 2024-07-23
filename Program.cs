@@ -74,15 +74,18 @@ internal class StartUsing
         var lockCollection = await scope.CollectionAsync("lock");
         
         var lockDocument = new { status = "pending_operation", client = "myclient" };
-        try
+        for(int i = 0; i <= 10; i++)
         {
-            await lockCollection.InsertAsync("lock", lockDocument);
-            Console.WriteLine("Lock set");
-        }
-        catch (DocumentExistsException)
-        {
-            Console.WriteLine("Pending operation");
-            return "ciao";
+            try
+            {
+                await lockCollection.InsertAsync("lock", lockDocument);
+                Console.WriteLine("Lock set");
+            }
+            catch (DocumentExistsException)
+            {
+                Console.WriteLine("Pending operation...");
+                Thread.Sleep(6000);
+            }
         }
 
         var watch = Stopwatch.StartNew();

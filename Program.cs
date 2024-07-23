@@ -131,6 +131,7 @@ internal class StartUsing
                         IQueryResult<object> qr = await ctx.QueryAsync<object>(st,
                             options: new TransactionQueryOptions().Timeout(TimeSpan.FromSeconds(360)),
                             scope: scope);
+                        await bucket.WaitUntilReadyAsync(TimeSpan.FromSeconds(10));
                     }
                 }
             });

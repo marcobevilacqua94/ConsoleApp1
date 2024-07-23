@@ -61,7 +61,7 @@ internal class StartUsing
 
     public async Task<string> ExecuteInTransactionAsync(string username, string password, string host, int total, object documento, int queryChunk, int expTime)
     {
-        var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l > LogLevel.Information).AddConsole(); });
+        var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l >= LogLevel.Information).AddConsole(); });
         var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");
 
         var options = new ClusterOptions().WithCredentials(username, password).WithLogging(loggerFactory);
@@ -131,7 +131,6 @@ internal class StartUsing
                         IQueryResult<object> qr = await ctx.QueryAsync<object>(st,
                             options: new TransactionQueryOptions().Timeout(TimeSpan.FromSeconds(360)),
                             scope: scope);
-                        await bucket.WaitUntilReadyAsync(TimeSpan.FromSeconds(20));
                     }
                 }
             });

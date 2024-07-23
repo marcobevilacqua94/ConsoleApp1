@@ -91,7 +91,7 @@ internal class StartUsing
         var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 2 };
         //await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (i, token1) =>
         //{
-        for (var i = 0; i <= 3; i++)
+        for (var i = 0; i <= 0; i++)
         {
                 var _collection = await scope.CollectionAsync("test" + i).ConfigureAwait(false);
                 await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
@@ -117,7 +117,7 @@ internal class StartUsing
             var transactionResult = await _transactions.RunAsync(async ctx =>
             {
 
-                for (var i = 0; i <= 3; i++)
+                for (var i = 0; i <= 0; i++)
                 {
                     var keys = Enumerable.Range(0, total).Select(n => n.ToString() + "-" + i).ToArray<string>();
                     var numChunks = total / queryChunk;

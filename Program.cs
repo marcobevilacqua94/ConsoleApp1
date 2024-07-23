@@ -80,6 +80,7 @@ internal class StartUsing
             {
                 await lockCollection.InsertAsync("lock", lockDocument);
                 Console.WriteLine("Lock set");
+                break;
             }
             catch (DocumentExistsException)
             {

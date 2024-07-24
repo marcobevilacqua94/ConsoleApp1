@@ -160,9 +160,9 @@ internal class StartUsing
         var bucket = await cluster.BucketAsync("test");
         //var metadata_scope = await bucket.ScopeAsync("test");
         //var metadata_collection = await metadata_scope.CollectionAsync("test");
-        //var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
-        //    .ExpirationTime(TimeSpan.FromSeconds(expTime))
-        //    .Build());
+        var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
+            .ExpirationTime(TimeSpan.FromSeconds(expTime))
+            .Build());
 
 
         var watch = Stopwatch.StartNew();
@@ -198,24 +198,28 @@ internal class StartUsing
 
       //  var keysString = "'" + string.Join("', '", keys) + "'";
         var st = "UPSERT INTO test.test.testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test.test.test as t USE KEYS (SELECT RAW TO_STRING(_keys) FROM ARRAY_RANGE(0, " + total + ") AS _keys)";
-     //   var st = "MERGE INTO testFinal tf USING test t ON PRIMARY KEY Meta(t).id WHEN MATCHED THEN UPDATE SET tf = t WHEN NOT MATCHED THEN INSERT t;";
+        //   var st = "MERGE INTO testFinal tf USING test t ON PRIMARY KEY Meta(t).id WHEN MATCHED THEN UPDATE SET tf = t WHEN NOT MATCHED THEN INSERT t;";
 
-        
-        try
+
+        await _transactions.RunAsync(async ctx =>
         {
+            IQueryResult<object> qr = await ctx.QueryAsync<object>(st);
+        });
+        //try
+        //{
 
-            await cluster.QueryAsync<object>(st, options => options
-            .Raw("tximplicit", true)
-            .Raw("txtimeout", expTime + "s")
-            .Raw("durability_level", "none")
-            .Raw("timeout", expTime + "s")
-            .Raw("kvtimeout", "100s"));
+        //    await cluster.QueryAsync<object>(st, options => options
+        //    .Raw("tximplicit", true)
+        //    .Raw("txtimeout", expTime + "s")
+        //    .Raw("durability_level", "none")
+        //    .Raw("timeout", expTime + "s")
+        //    .Raw("kvtimeout", "100s"));
             
-        }
-        catch (Exception e)
-        {
-            logger.LogError("Transaction operation failed " + e.Message);
-        }
+        //}
+        //catch (Exception e)
+        //{
+        //    logger.LogError("Transaction operation failed " + e.Message);
+        //}
       
 
 

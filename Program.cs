@@ -195,7 +195,7 @@ internal class StartUsing
             st += $" (\"{h}\", {System.Text.Json.JsonSerializer.Serialize(documento)}),";
 
         }
-        st.Remove(-1);
+        st = st.Remove(st.Length - 1);
         var stopWatch1 = Stopwatch.StartNew();
 
         Console.WriteLine(st);

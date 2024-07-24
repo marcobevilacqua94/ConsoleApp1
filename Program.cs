@@ -150,16 +150,6 @@ internal class StartUsing
 
 
 
-
-
-
-
-
-
-
-
-
-
     public async Task<string> ExecuteInTransactionAsync1(string username, string password, string host, int total, object documento, int expTime)
     {
         var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l >= LogLevel.Information).AddConsole(); });
@@ -210,6 +200,7 @@ internal class StartUsing
         var st = "UPSERT INTO test.test.testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test.test.test as t USE KEYS (SELECT RAW TO_STRING(_keys) FROM ARRAY_RANGE(0, " + total + ") AS _keys)";
      //   var st = "MERGE INTO testFinal tf USING test t ON PRIMARY KEY Meta(t).id WHEN MATCHED THEN UPDATE SET tf = t WHEN NOT MATCHED THEN INSERT t;";
 
+        
         try
         {
 

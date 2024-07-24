@@ -218,7 +218,7 @@ internal class StartUsing
         try
         {
             await _transactions.QueryAsync<object>(
-                st, config => config.ExpirationTime(TimeSpan.FromSeconds(expTime)));
+                st, config => config.ExpirationTime(TimeSpan.FromSeconds(expTime)), scope);
             
         }
         catch (TransactionOperationFailedException e)

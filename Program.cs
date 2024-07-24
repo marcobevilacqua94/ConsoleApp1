@@ -227,7 +227,7 @@ internal class StartUsing
                 .Raw("txtimeout", expTime + "s")
                 .Raw("timeout", expTime + "s")
                 .Raw("kvtimeout", "100s")
-                .Raw("durability_level", "none")
+           //     .Raw("durability_level", "none")
                 ),
 
                 scope); 

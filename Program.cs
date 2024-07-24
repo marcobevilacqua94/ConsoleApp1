@@ -171,6 +171,7 @@ internal class StartUsing
         var metadata_scope = await bucket.ScopeAsync("test");
         var metadata_collection = await metadata_scope.CollectionAsync("test");
         var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
+            
             .Build());
 
 
@@ -213,6 +214,8 @@ internal class StartUsing
         {
             await _transactions.QueryAsync<object>(
                 st, config => config
+                .ExpirationTime(TimeSpan.FromSeconds(expTime))
+                .DurabilityLevel(DurabilityLevel.None)
                 .QueryOptions(new TransactionQueryOptions()
                // .Raw("tximplicit", "true")
                 .Raw("txtimeout", expTime + "s")

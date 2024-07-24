@@ -216,7 +216,6 @@ internal class StartUsing
             await cluster.QueryAsync<object>(st, options => options
             .Raw("tximplicit", true)
             .Raw("txtimeout", expTime + "s")
-            .Raw("kvtimeout", "100s")
             .Raw("timeout", expTime + "s")
             .Raw("durability_level", "none"));
             

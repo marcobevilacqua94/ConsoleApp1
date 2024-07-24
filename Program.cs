@@ -192,7 +192,7 @@ internal class StartUsing
         string st = "UPSERT INTO test (KEY docId, VALUE doc)";
         for (int h =0; h< total; h++)
         {
-            st += $"\nVALUES ('{h}', {System.Text.Json.JsonSerializer.Serialize(documento)})";
+            st += $" VALUES ('{h}', {System.Text.Json.JsonSerializer.Serialize(documento)})";
 
         }
         

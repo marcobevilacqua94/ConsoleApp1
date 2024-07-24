@@ -171,13 +171,6 @@ internal class StartUsing
         var metadata_scope = await bucket.ScopeAsync("test");
         var metadata_collection = await metadata_scope.CollectionAsync("test");
         var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
-            .DurabilityLevel(DurabilityLevel.None)
-            .ExpirationTime(TimeSpan.FromSeconds(expTime))
-            .LoggerFactory(loggerFactory)
-          //  .CleanupLostAttempts(true)
-         //   .CleanupClientAttempts(true)
-        //    .MetadataCollection(metadata_collection)
-        //    .CleanupWindow(TimeSpan.FromSeconds(30))
             .Build());
 
 
@@ -219,15 +212,13 @@ internal class StartUsing
         try
         {
             await _transactions.QueryAsync<object>(
-                st, config => config.
-                ExpirationTime(TimeSpan.FromSeconds(expTime))
-                .DurabilityLevel(DurabilityLevel.None)
+                st, config => config
                 .QueryOptions(new TransactionQueryOptions()
                 .Raw("tximplicit", true)
                 .Raw("txtimeout", expTime + "s")
                 .Raw("timeout", expTime + "s")
                 .Raw("kvtimeout", "100s")
-           //     .Raw("durability_level", "none")
+                .Raw("durability_level", "none")
                 ),
 
                 scope); 

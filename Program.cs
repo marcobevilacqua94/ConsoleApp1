@@ -21,7 +21,7 @@ Console.WriteLine("Hello, World!");
 
 // args are connection string, username, password, number of docs to import, number of chars in body attribute in the doc
 // on the cluster create "test" bucket, "test" scope, "test" "test0" "test1" "test2" "test3" collections 
-await new StartUsing().Main(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+await new StartUsing().Main(args[0], args[1], args[2], args[3], args[4], args[5]);
 
 //await new StartUsing().BulkInsertInTxn();
 internal class StartUsing
@@ -35,11 +35,10 @@ internal class StartUsing
             .Select(s => s[random.Next(s.Length)]).ToArray());
     }
 
-    public async Task Main(string host, string username, string password, string totalS, string sizeS, string queryChunkS, string expTimeS)
+    public async Task Main(string host, string username, string password, string totalS, string sizeS, string expTimeS)
     {
         var total = int.Parse(totalS);
         var expTime = int.Parse(expTimeS);
-        var queryChunk = int.Parse(queryChunkS);
         var documento = new
         {
             _id = "667bfaddb0463c180d804cc9",
@@ -57,12 +56,12 @@ internal class StartUsing
             email = "sherriburke@zillanet.com"
         };
 
-        await Execute(username, password, host, total, documento, queryChunk, expTime);
+        await ExecuteInTransactionAsync1(username, password, host, total, documento, expTime);
 
     }
 
 
-    public async Task<string> Execute(string username, string password, string host, int total, object documento, int queryChunk, int expTime)
+    public async Task<string> Execute(string username, string password, string host, int total, object documento)
     {
         var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l >= LogLevel.Information).AddConsole(); });
         var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");
@@ -85,41 +84,41 @@ internal class StartUsing
             catch (DocumentExistsException)
             {
                 Console.WriteLine("Pending operation...");
-                Thread.Sleep(6000);
+                var lockResult1 = await lockCollection.GetAsync("lock");
+                var lockDocumentPending = lockResult1.ContentAs<dynamic>();
+                if (lockDocumentPending.client == "myclient")
+                {
+                    Console.WriteLine("Retrying previous import of this client"); // lock acquisito da se stesso potrebbe riprovare l'import se i dati dell'import fossero identici
+                    break;
+                }
+                else
+                {
+                    Thread.Sleep(6000);
+                }
             }
         }
 
         var watch = Stopwatch.StartNew();
 
-        
-
-
-        var tasks = new List<Task>();
-        var stopWatch = Stopwatch.StartNew();
-
         var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 2 };
 
-        for (var i = 0; i <= 0; i++)
+
+        var _collection = await scope.CollectionAsync("test").ConfigureAwait(false);
+        await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
         {
-            var _collection = await scope.CollectionAsync("test" + i).ConfigureAwait(false);
-            await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
+            var result = await _collection.UpsertAsync(index.ToString(), documento,
+                    options =>
+                    {
+                        options.Timeout(TimeSpan.FromSeconds(10));
+                    }
+                );
+
+            if (index % 100 == 0)
             {
-                var result = await _collection.UpsertAsync(index.ToString() + "-" + i, documento,
-                        options =>
-                        {
-                            options.Timeout(TimeSpan.FromSeconds(10));
-                        }
-                    );
-
-                if (index % 100 == 0)
-                {
-                    Console.WriteLine($"Collection {i}, Inserted {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
-                }
-            });
-        }
-        var stopWatch1 = Stopwatch.StartNew();
-
-
+                Console.WriteLine($"Inserted {index:D10} documents - {watch.Elapsed.TotalSeconds:0.00}secs");
+            }
+        });
+        
         var lockResult = await lockCollection.GetAsync("lock");
         var lockDocument1 = lockResult.ContentAs<dynamic>();
         if(lockDocument1.client == "myclient")
@@ -130,7 +129,7 @@ internal class StartUsing
         
 
 
-        Console.WriteLine($"Total time elapsed - {stopWatch1.Elapsed.TotalSeconds:0.00}secs");
+        Console.WriteLine($"Total time elapsed - {watch.Elapsed.TotalSeconds:0.00}secs");
 
 
         watch.Stop();
@@ -161,12 +160,103 @@ internal class StartUsing
 
 
 
+    public async Task<string> ExecuteInTransactionAsync1(string username, string password, string host, int total, object documento, int expTime)
+    {
+        var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l >= LogLevel.Information).AddConsole(); });
+        var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");
+
+        var options = new ClusterOptions().WithCredentials(username, password).WithLogging(loggerFactory);
+        var cluster = await Cluster.ConnectAsync(host, options).ConfigureAwait(false);
+        var bucket = await cluster.BucketAsync("test");
+        var metadata_scope = await bucket.ScopeAsync("test");
+        var metadata_collection = await metadata_scope.CollectionAsync("test");
+        var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
+            .DurabilityLevel(DurabilityLevel.None)
+            .ExpirationTime(TimeSpan.FromSeconds(expTime))
+            .LoggerFactory(loggerFactory)
+            .CleanupLostAttempts(true)
+            .CleanupClientAttempts(true)
+            .MetadataCollection(metadata_collection)
+            .CleanupWindow(TimeSpan.FromSeconds(30))
+            .Build());
+
+
+        var watch = Stopwatch.StartNew();
+
+        var scope = await bucket.ScopeAsync("test").ConfigureAwait(false);
+
+
+        var tasks = new List<Task>();
+        var stopWatch = Stopwatch.StartNew();
+
+        var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 2 };
+
+        var _collection = await scope.CollectionAsync("test").ConfigureAwait(false);
+        await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
+        {
+            var result = await _collection.UpsertAsync(index.ToString(), documento,
+                    options =>
+                    {
+                        options.Timeout(TimeSpan.FromSeconds(10));
+                    }
+                );
+
+            if (index % 100 == 0)
+            {
+                Console.WriteLine($"Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
+            }
+        });
+        
+        var stopWatch1 = Stopwatch.StartNew();
+
+        var keys = Enumerable.Range(0, total).Select(n => n.ToString()).ToArray<string>();
+
+        var keysString = "'" + string.Join("', '", keys) + "'";
+        var st = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test as t USE KEYS [" + keysString + "]";
+
+
+        try
+        {
+            await _transactions.QueryAsync<object>(
+                st, config => config.ExpirationTime(TimeSpan.FromSeconds(expTime)));
+            
+        }
+        catch (TransactionOperationFailedException e)
+        {
+            logger.LogError("Transaction operation failed " + e.Message);
+        }
+        catch (TransactionCommitAmbiguousException e)
+        {
+            logger.LogError("Transaction possibly committed " + e.Message);
+        }
+        catch (TransactionExpiredException e)
+        {
+            logger.LogError("Transaction expired, trying again " + e.Message);
+        }
+        catch (TransactionFailedException e)
+        {
+            logger.LogError("Transaction did not reach commit point " + e.Message);
+        }
 
 
 
 
 
-    public async Task<string> ExecuteInTransactionAsync(string username, string password, string host, int total, object documento, int queryChunk, int expTime)
+        Console.WriteLine($"Total transaction time elapsed - {stopWatch1.Elapsed.TotalSeconds:0.00}secs");
+
+
+        watch.Stop();
+        var elapsedMs = watch.ElapsedMilliseconds;
+        Console.WriteLine(elapsedMs / 1000 + "s");
+        return new string("ciao");
+
+    }
+
+
+
+
+
+public async Task<string> ExecuteInTransactionAsync(string username, string password, string host, int total, object documento, int queryChunk, int expTime)
     {
         var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l >= LogLevel.Information).AddConsole(); });
         var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");

@@ -189,30 +189,15 @@ internal class StartUsing
         var tasks = new List<Task>();
         var stopWatch = Stopwatch.StartNew();
 
-        var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 2 };
-
-        var _collection = await scope.CollectionAsync("test").ConfigureAwait(false);
-        await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
+        string st = "UPSERT INTO test (KEY docId, VALUE doc)";
+        for (int h =0; h< total; h++)
         {
-            var result = await _collection.UpsertAsync(index.ToString(), documento,
-                    options =>
-                    {
-                        options.Timeout(TimeSpan.FromSeconds(10));
-                    }
-                );
+            st += $"\nVALUES ('{h}', {System.Text.Json.JsonSerializer.Serialize(documento)})";
 
-            if (index % 100 == 0)
-            {
-                Console.WriteLine($"Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
-            }
-        });
+        }
         
         var stopWatch1 = Stopwatch.StartNew();
 
-        var keys = Enumerable.Range(0, total).Select(n => n.ToString()).ToArray<string>();
-
-        var keysString = "'" + string.Join("', '", keys) + "'";
-        var st = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test as t USE KEYS [" + keysString + "]";
         Console.WriteLine(st);
 
         try

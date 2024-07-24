@@ -189,21 +189,36 @@ internal class StartUsing
         var tasks = new List<Task>();
         var stopWatch = Stopwatch.StartNew();
 
-        string st = "UPSERT INTO test (KEY, VALUE) VALUES";
-        for (int h =0; h< total; h++)
-        {
-            st += $" (\"{h}\", {System.Text.Json.JsonSerializer.Serialize(documento)}),";
+        var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 2 };
 
-        }
-        st = st.Remove(st.Length - 1);
+        var _collection = await scope.CollectionAsync("test").ConfigureAwait(false);
+        await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
+        {
+            var result = await _collection.UpsertAsync(index.ToString(), documento,
+                    options =>
+                    {
+                        options.Timeout(TimeSpan.FromSeconds(10));
+                    }
+                );
+
+            if (index % 100 == 0)
+            {
+                Console.WriteLine($"Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
+            }
+        });
+        
         var stopWatch1 = Stopwatch.StartNew();
 
-        //Console.WriteLine(st);
+        //var keys = Enumerable.Range(0, total).Select(n => n.ToString()).ToArray<string>();
+
+      //  var keysString = "'" + string.Join("', '", keys) + "'";
+        var st = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test as t USE KEYS (SELECT RAW TO_STRING(_keys) FROM ARRAY_RANGE(0, " + total + ") AS _keys)";
+      //  var st1 = "MERGE INTO testFinal USING test ON META(testFinal).id = META(test).id";
 
         try
         {
             await _transactions.QueryAsync<object>(
-                st, config => config.ExpirationTime(TimeSpan.FromSeconds(expTime)), scope);
+                st, config => config.ExpirationTime(TimeSpan.FromSeconds(expTime)));
             
         }
         catch (TransactionOperationFailedException e)

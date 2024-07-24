@@ -213,7 +213,7 @@ internal class StartUsing
 
         var keysString = "'" + string.Join("', '", keys) + "'";
         var st = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test as t USE KEYS [" + keysString + "]";
-
+        Console.WriteLine(st);
 
         try
         {

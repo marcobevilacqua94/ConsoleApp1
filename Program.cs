@@ -189,13 +189,13 @@ internal class StartUsing
         var tasks = new List<Task>();
         var stopWatch = Stopwatch.StartNew();
 
-        string st = "UPSERT INTO test (KEY, VALUE)";
+        string st = "UPSERT INTO test (KEY, VALUE) VALUES";
         for (int h =0; h< total; h++)
         {
-            st += $" VALUES (\"{h}\", {System.Text.Json.JsonSerializer.Serialize(documento)})";
+            st += $" (\"{h}\", {System.Text.Json.JsonSerializer.Serialize(documento)}),";
 
         }
-        
+        st.Remove(-1);
         var stopWatch1 = Stopwatch.StartNew();
 
         Console.WriteLine(st);

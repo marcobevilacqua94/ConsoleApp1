@@ -174,10 +174,10 @@ internal class StartUsing
             .DurabilityLevel(DurabilityLevel.None)
             .ExpirationTime(TimeSpan.FromSeconds(expTime))
             .LoggerFactory(loggerFactory)
-            .CleanupLostAttempts(true)
-            .CleanupClientAttempts(true)
-            .MetadataCollection(metadata_collection)
-            .CleanupWindow(TimeSpan.FromSeconds(30))
+          //  .CleanupLostAttempts(true)
+         //   .CleanupClientAttempts(true)
+        //    .MetadataCollection(metadata_collection)
+        //    .CleanupWindow(TimeSpan.FromSeconds(30))
             .Build());
 
 

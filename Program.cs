@@ -165,14 +165,14 @@ internal class StartUsing
         var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l >= LogLevel.Information).AddConsole(); });
         var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");
 
-        var options = new ClusterOptions().WithCredentials(username, password).WithLogging(loggerFactory);
+        var options = new ClusterOptions() { QueryTimeout = TimeSpan.FromSeconds(expTime) }.WithCredentials(username, password).WithLogging(loggerFactory);
         var cluster = await Cluster.ConnectAsync(host, options).ConfigureAwait(false);
         var bucket = await cluster.BucketAsync("test");
-        var metadata_scope = await bucket.ScopeAsync("test");
-        var metadata_collection = await metadata_scope.CollectionAsync("test");
-        var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
-            .ExpirationTime(TimeSpan.FromSeconds(expTime))
-            .Build());
+        //var metadata_scope = await bucket.ScopeAsync("test");
+        //var metadata_collection = await metadata_scope.CollectionAsync("test");
+        //var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
+        //    .ExpirationTime(TimeSpan.FromSeconds(expTime))
+        //    .Build());
 
 
         var watch = Stopwatch.StartNew();

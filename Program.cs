@@ -212,8 +212,8 @@ internal class StartUsing
         //var keys = Enumerable.Range(0, total).Select(n => n.ToString()).ToArray<string>();
 
       //  var keysString = "'" + string.Join("', '", keys) + "'";
-        var st = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test as t USE KEYS (SELECT RAW TO_STRING(_keys) FROM ARRAY_RANGE(0, " + total + ") AS _keys)";
-      //  var st1 = "MERGE INTO testFinal USING test ON META(testFinal).id = META(test).id";
+       // var st1 = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test as t USE KEYS (SELECT RAW TO_STRING(_keys) FROM ARRAY_RANGE(0, " + total + ") AS _keys)";
+        var st = "MERGE INTO testFinal tf USING test t ON PRIMARY KEY Meta(t).id WHEN MATCHED THEN UPDATE SET tf = t WHEN NOT MATCHED THEN INSERT t;";
 
         try
         {

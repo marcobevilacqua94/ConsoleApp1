@@ -198,7 +198,7 @@ internal class StartUsing
         st = st.Remove(st.Length - 1);
         var stopWatch1 = Stopwatch.StartNew();
 
-        Console.WriteLine(st);
+        //Console.WriteLine(st);
 
         try
         {

@@ -207,42 +207,25 @@ internal class StartUsing
         //var keys = Enumerable.Range(0, total).Select(n => n.ToString()).ToArray<string>();
 
       //  var keysString = "'" + string.Join("', '", keys) + "'";
-        var st = "UPSERT INTO testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test as t USE KEYS (SELECT RAW TO_STRING(_keys) FROM ARRAY_RANGE(0, " + total + ") AS _keys)";
+        var st = "UPSERT INTO test.test.testFinal (KEY docId, VALUE doc) SELECT Meta().id as docId, t as doc FROM test.test.test as t USE KEYS (SELECT RAW TO_STRING(_keys) FROM ARRAY_RANGE(0, " + total + ") AS _keys)";
      //   var st = "MERGE INTO testFinal tf USING test t ON PRIMARY KEY Meta(t).id WHEN MATCHED THEN UPDATE SET tf = t WHEN NOT MATCHED THEN INSERT t;";
 
         try
         {
-            await _transactions.QueryAsync<object>(
-                st, config => config
-                .ExpirationTime(TimeSpan.FromSeconds(expTime))
-                .DurabilityLevel(DurabilityLevel.None)
-                .QueryOptions(new TransactionQueryOptions()
-               // .Raw("tximplicit", "true")
-                .Raw("txtimeout", expTime + "s")
-                .Raw("timeout", expTime + "s")
-                .Raw("kvtimeout", "100s")
-                .Raw("durability_level", "none")
-                ),
 
-                scope); 
+            await cluster.QueryAsync<object>(st, options => options
+            .Raw("tximplicit", true)
+            .Raw("txtimeout", expTime + "s")
+            .Raw("kvtimeout", "100s")
+            .Raw("timeout", expTime + "s")
+            .Raw("durability_level", "none"));
             
         }
-        catch (TransactionOperationFailedException e)
+        catch (Exception e)
         {
             logger.LogError("Transaction operation failed " + e.Message);
         }
-        catch (TransactionCommitAmbiguousException e)
-        {
-            logger.LogError("Transaction possibly committed " + e.Message);
-        }
-        catch (TransactionExpiredException e)
-        {
-            logger.LogError("Transaction expired, trying again " + e.Message);
-        }
-        catch (TransactionFailedException e)
-        {
-            logger.LogError("Transaction did not reach commit point " + e.Message);
-        }
+      
 
 
 

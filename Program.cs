@@ -171,7 +171,7 @@ internal class StartUsing
         var metadata_scope = await bucket.ScopeAsync("test");
         var metadata_collection = await metadata_scope.CollectionAsync("test");
         var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
-            
+            .ExpirationTime(TimeSpan.FromSeconds(expTime))
             .Build());
 
 

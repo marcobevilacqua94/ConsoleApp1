@@ -224,7 +224,10 @@ internal class StartUsing
                 .DurabilityLevel(DurabilityLevel.None)
                 .QueryOptions(new TransactionQueryOptions()
              //   .Raw("tximplicit", "true")
-                .Raw("txtimeout", expTime + "s").Raw("timeout", expTime + "s").Raw("kvtimeout", "100s").Raw("durability_level", "none")
+                .Raw("txtimeout", expTime + "s")
+                .Raw("timeout", expTime + "s")
+                .Raw("kvtimeout", "100s")
+                .Raw("durability_level", "none")
                 ),
 
                 scope); 

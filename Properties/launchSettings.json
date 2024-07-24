@@ -2,7 +2,7 @@
   "profiles": {
     "ConsoleApp1": {
       "commandName": "Project",
-      "commandLineArgs": "44.220.193.203 Administrator password 2000 1500 500 30",
+      "commandLineArgs": "44.222.104.115 Administrator password 50000 1500 500",
       "environmentVariables": {
         "LOGGING__LOGLEVEL__DEFAULT": "Debug"
       }

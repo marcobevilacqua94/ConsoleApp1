@@ -155,7 +155,7 @@ internal class StartUsing
         var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l >= LogLevel.Information).AddConsole(); });
         var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");
 
-        var options = new ClusterOptions() { QueryTimeout = TimeSpan.FromSeconds(expTime), ManagementTimeout = TimeSpan.FromSeconds(expTime) }.WithCredentials(username, password).WithLogging(loggerFactory);
+        var options = new ClusterOptions() { QueryTimeout = TimeSpan.FromSeconds(30) }.WithCredentials(username, password).WithLogging(loggerFactory);
         var cluster = await Cluster.ConnectAsync(host, options).ConfigureAwait(false);
         var bucket = await cluster.BucketAsync("test");
         //var metadata_scope = await bucket.ScopeAsync("test");
@@ -176,21 +176,21 @@ internal class StartUsing
         var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 2 };
 
         var _collection = await scope.CollectionAsync("test").ConfigureAwait(false);
-        await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
-        {
-            var result = await _collection.UpsertAsync(index.ToString(), documento,
-                    options =>
-                    {
-                        options.Timeout(TimeSpan.FromSeconds(10));
+        //await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
+        //{
+        //    var result = await _collection.UpsertAsync(index.ToString(), documento,
+        //            options =>
+        //            {
+        //                options.Timeout(TimeSpan.FromSeconds(10));
  
-                    }
-                );
+        //            }
+        //        );
 
-            if (index % 100 == 0)
-            {
-                Console.WriteLine($"Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
-            }
-        });
+        //    if (index % 100 == 0)
+        //    {
+        //        Console.WriteLine($"Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
+        //    }
+        //});
         
         var stopWatch1 = Stopwatch.StartNew();
 

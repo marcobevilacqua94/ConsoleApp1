@@ -221,7 +221,7 @@ internal class StartUsing
             await _transactions.QueryAsync<object>(
                 st, config => config.
                 ExpirationTime(TimeSpan.FromSeconds(expTime))
-                .QueryOptions(new TransactionQueryOptions().Timeout(TimeSpan.FromSeconds(expTime))),
+                .QueryOptions(new TransactionQueryOptions().Timeout(TimeSpan.FromSeconds(expTime)).Raw("tximplicit", true).Raw("txtimeout", expTime).Raw("timeout", expTime).Raw("kvtimeout", "100s").Raw("durability_level", "none")),
 
                 scope); 
             

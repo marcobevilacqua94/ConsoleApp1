@@ -223,7 +223,7 @@ internal class StartUsing
                 ExpirationTime(TimeSpan.FromSeconds(expTime))
                 .DurabilityLevel(DurabilityLevel.None)
                 .QueryOptions(new TransactionQueryOptions()
-             //   .Raw("tximplicit", "true")
+                .Raw("tximplicit", true)
                 .Raw("txtimeout", expTime + "s")
                 .Raw("timeout", expTime + "s")
                 .Raw("kvtimeout", "100s")

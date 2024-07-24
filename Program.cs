@@ -201,25 +201,25 @@ internal class StartUsing
         //   var st = "MERGE INTO testFinal tf USING test t ON PRIMARY KEY Meta(t).id WHEN MATCHED THEN UPDATE SET tf = t WHEN NOT MATCHED THEN INSERT t;";
 
 
-        await _transactions.RunAsync(async ctx =>
+        //await _transactions.RunAsync(async ctx =>
+        //{
+        //    IQueryResult<object> qr = await ctx.QueryAsync<object>(st);
+        //});
+        try
         {
-            IQueryResult<object> qr = await ctx.QueryAsync<object>(st);
-        });
-        //try
-        //{
 
-        //    await cluster.QueryAsync<object>(st, options => options
-        //    .Raw("tximplicit", true)
-        //    .Raw("txtimeout", expTime + "s")
-        //    .Raw("durability_level", "none")
-        //    .Raw("timeout", expTime + "s")
-        //    .Raw("kvtimeout", "100s"));
-            
-        //}
-        //catch (Exception e)
-        //{
-        //    logger.LogError("Transaction operation failed " + e.Message);
-        //}
+            await cluster.QueryAsync<object>(st, options => options
+            .Raw("tximplicit", true)
+            .Raw("txtimeout", expTime + "s")
+            .Raw("durability_level", "none")
+            .Raw("timeout", expTime + "s")
+            .Raw("kvtimeout", "100s"));
+        
+        }
+        catch (Exception e)
+        {
+            logger.LogError("Transaction operation failed " + e.Message);
+        }
       
 
 

@@ -10,7 +10,7 @@
       "ConsoleApp1/1.0.0": {
         "dependencies": {
           "Couchbase.Transactions": "1.1.0",
-          "CouchbaseNetClient": "3.6.0",
+          "CouchbaseNetClient": "3.5.3",
           "Microsoft.Extensions.Logging.Console": "8.0.0",
           "Microsoft.NET.Build.Containers": "8.0.302",
           "Serilog.Extensions.Logging.File": "2.0.0",
@@ -734,7 +734,7 @@
       },
       "Couchbase.Transactions/1.1.0": {
         "dependencies": {
-          "CouchbaseNetClient": "3.6.0",
+          "CouchbaseNetClient": "3.5.3",
           "Crc32.NET": "1.2.0"
         },
         "runtime": {
@@ -744,7 +744,7 @@
           }
         }
       },
-      "CouchbaseNetClient/3.6.0": {
+      "CouchbaseNetClient/3.5.3": {
         "dependencies": {
           "DnsClient": "1.3.2",
           "Google.Api.CommonProtos": "2.13.0",
@@ -757,12 +757,12 @@
           "Snappier": "1.1.6",
           "System.IO.Pipelines": "5.0.1",
           "System.Linq.Async": "4.1.1",
-          "System.Text.Json": "8.0.0"
+          "System.Text.Json": "8.0.4"
         },
         "runtime": {
           "lib/net6.0/Couchbase.NetClient.dll": {
-            "assemblyVersion": "3.6.0.0",
-            "fileVersion": "3.6.0.0"
+            "assemblyVersion": "3.5.3.0",
+            "fileVersion": "3.5.3.0"
           }
         }
       },
@@ -985,7 +985,7 @@
           "Microsoft.Extensions.Logging.Abstractions": "8.0.0",
           "Microsoft.Extensions.Logging.Configuration": "8.0.0",
           "Microsoft.Extensions.Options": "8.0.0",
-          "System.Text.Json": "8.0.0"
+          "System.Text.Json": "8.0.4"
         },
         "runtime": {
           "lib/net7.0/Microsoft.Extensions.Logging.Console.dll": {
@@ -1529,14 +1529,14 @@
           }
         }
       },
-      "System.Text.Json/8.0.0": {
+      "System.Text.Json/8.0.4": {
         "dependencies": {
           "System.Text.Encodings.Web": "8.0.0"
         },
         "runtime": {
           "lib/net7.0/System.Text.Json.dll": {
             "assemblyVersion": "8.0.0.0",
-            "fileVersion": "8.0.23.53103"
+            "fileVersion": "8.0.724.31311"
           }
         }
       },
@@ -1592,12 +1592,12 @@
       "path": "couchbase.transactions/1.1.0",
       "hashPath": "couchbase.transactions.1.1.0.nupkg.sha512"
     },
-    "CouchbaseNetClient/3.6.0": {
+    "CouchbaseNetClient/3.5.3": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-aklMHyIKanvFwp17iEuCbs2WfdNHSiZ1JLN4Dnxy3Dwm5htyaf733FNssGJBoeFUYQ5aYPjJG4nPDdzVHi8xyg==",
-      "path": "couchbasenetclient/3.6.0",
-      "hashPath": "couchbasenetclient.3.6.0.nupkg.sha512"
+      "sha512": "sha512-FNCZh3PFyvOIZxPpOA12dY+aNdR4HcQ7K0ghmQKPtww962ICO8M9Mf9Ha66qn6t8uejtjkoO5xJomO99n29h6g==",
+      "path": "couchbasenetclient/3.5.3",
+      "hashPath": "couchbasenetclient.3.5.3.nupkg.sha512"
     },
     "Crc32.NET/1.2.0": {
       "type": "package",
@@ -2222,12 +2222,12 @@
       "path": "system.text.encodings.web/8.0.0",
       "hashPath": "system.text.encodings.web.8.0.0.nupkg.sha512"
     },
-    "System.Text.Json/8.0.0": {
+    "System.Text.Json/8.0.4": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-OdrZO2WjkiEG6ajEFRABTRCi/wuXQPxeV6g8xvUJqdxMvvuCCEk86zPla8UiIQJz3durtUEbNyY/3lIhS0yZvQ==",
-      "path": "system.text.json/8.0.0",
-      "hashPath": "system.text.json.8.0.0.nupkg.sha512"
+      "sha512": "sha512-bAkhgDJ88XTsqczoxEMliSrpijKZHhbJQldhAmObj/RbrN3sU5dcokuXmWJWsdQAhiMJ9bTayWsL1C9fbbCRhw==",
+      "path": "system.text.json/8.0.4",
+      "hashPath": "system.text.json.8.0.4.nupkg.sha512"
     },
     "System.Text.RegularExpressions/4.1.0": {
       "type": "package",

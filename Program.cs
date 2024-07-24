@@ -155,7 +155,7 @@ internal class StartUsing
         var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l >= LogLevel.Information).AddConsole(); });
         var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");
 
-        var options = new ClusterOptions() { QueryTimeout = TimeSpan.FromSeconds(expTime) }.WithCredentials(username, password).WithLogging(loggerFactory);
+        var options = new ClusterOptions() { QueryTimeout = TimeSpan.FromSeconds(expTime), ManagementTimeout = TimeSpan.FromSeconds(expTime) }.WithCredentials(username, password).WithLogging(loggerFactory);
         var cluster = await Cluster.ConnectAsync(host, options).ConfigureAwait(false);
         var bucket = await cluster.BucketAsync("test");
         //var metadata_scope = await bucket.ScopeAsync("test");
@@ -207,7 +207,6 @@ internal class StartUsing
             await cluster.QueryAsync<object>(st, options => options
             .Raw("tximplicit", true)
             .Raw("txtimeout", expTime + "s")
-            .Raw("timeout", expTime + "s")
             .Raw("durability_level", "none"));
             
         }

@@ -91,7 +91,7 @@ internal class StartUsing
             }
         });
 
-        await Task.WhenAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
     }
 
     public async Task<string> ExecuteInKeyValueTransactionAsync(string username, string password, string host, int total, object documento)
@@ -106,12 +106,12 @@ internal class StartUsing
         var metadata_collection = await metadata_scope.CollectionAsync("test");
         var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
             .DurabilityLevel(DurabilityLevel.Majority)
-            .ExpirationTime(TimeSpan.FromSeconds(120))
+            .ExpirationTime(TimeSpan.FromSeconds(3600))
             .LoggerFactory(loggerFactory)
             .CleanupLostAttempts(true)
             .CleanupClientAttempts(true)
             .MetadataCollection(metadata_collection)
-            .CleanupWindow(TimeSpan.FromSeconds(1))
+            .CleanupWindow(TimeSpan.FromSeconds(20))
             .Build());
 
 

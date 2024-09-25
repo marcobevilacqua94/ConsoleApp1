@@ -23,10 +23,10 @@ internal class StartUsing
             .Select(s => s[random.Next(s.Length)]).ToArray());
     }
 
-    public async Task Main(string host, string username, string password, string totalS, string sizeS, string expiryTime)
+    public async Task Main(string host, string username, string password, string totalS, string sizeS, string expiryTimeS)
     {
         var total = int.Parse(totalS);
-
+        var expiryTime = int.Parse(expiryTimeS);
 
         var documento = new
         {
@@ -46,7 +46,7 @@ internal class StartUsing
         };
 
 
-        await ExecuteInKeyValueTransactionAsync(username, password, host, total, documento);
+        await ExecuteInKeyValueTransactionAsync(username, password, host, total, documento, expiryTime);
         
 
     }
@@ -59,7 +59,7 @@ internal class StartUsing
 
         var tasks = new List<Task>();
         var stopWatch = Stopwatch.StartNew();
-        var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 8 };
+        var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
         await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
         {
 
@@ -80,7 +80,7 @@ internal class StartUsing
         });
     }
 
-    public async Task<string> ExecuteInKeyValueTransactionAsync(string username, string password, string host, int total, object documento)
+    public async Task<string> ExecuteInKeyValueTransactionAsync(string username, string password, string host, int total, object documento, int expiryTime)
     {
         var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l > LogLevel.Information).AddConsole(); });
         var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");
@@ -92,8 +92,7 @@ internal class StartUsing
         var metadata_scope = await bucket.ScopeAsync("test");
         var metadata_collection = await metadata_scope.CollectionAsync("test");
         var _transactions = Transactions.Create(cluster, TransactionConfigBuilder.Create()
-            .DurabilityLevel(DurabilityLevel.Majority)
-            .ExpirationTime(TimeSpan.FromSeconds(3600))
+            .ExpirationTime(TimeSpan.FromSeconds(expiryTime))
             .LoggerFactory(loggerFactory)
             .CleanupLostAttempts(true)
             .CleanupClientAttempts(true)

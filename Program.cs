@@ -1,6 +1,5 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using System.Threading.Tasks;
 using Couchbase;
 using Couchbase.KeyValue;
 using Couchbase.Transactions;
@@ -10,7 +9,7 @@ using Couchbase.Transactions.Error.External;
 using Microsoft.Extensions.Logging;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
-await new StartUsing().Main(args[0], args[1], args[2], args[3], args[4], args[5]);
+await new StartUsing().Main(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
 
 internal class StartUsing
 {
@@ -23,11 +22,11 @@ internal class StartUsing
             .Select(s => s[random.Next(s.Length)]).ToArray());
     }
 
-    public async Task Main(string host, string username, string password, string totalS, string sizeS, string expiryTimeS)
+    public async Task Main(string host, string username, string password, string totalS, string sizeS, string expiryTimeS, string upsertS)
     {
+        var upsert = upsertS == "upsert" ? true : false;
         var total = int.Parse(totalS);
         var expiryTime = int.Parse(expiryTimeS);
-
         var documento = new
         {
             _id = "667bfaddb0463c180d804cc9",
@@ -46,12 +45,12 @@ internal class StartUsing
         };
 
 
-        await ExecuteInKeyValueTransactionAsync(username, password, host, total, documento, expiryTime);
+        await ExecuteInKeyValueTransactionAsync(username, password, host, total, documento, expiryTime, upsert);
         
 
     }
 
-    public async Task updateDocs(ICluster cluster, AttemptContext ctx, object documento, int total)
+    public async Task updateDocs(ICluster cluster, AttemptContext ctx, object documento, int total, bool upsert)
     {
         var bucket = await cluster.BucketAsync("test").ConfigureAwait(false);
         var scope = await bucket.ScopeAsync("test").ConfigureAwait(false);
@@ -60,17 +59,24 @@ internal class StartUsing
         var tasks = new List<Task>();
         var stopWatch = Stopwatch.StartNew();
         var options1 = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+
         await Parallel.ForEachAsync(Enumerable.Range(0, total), options1, async (index, token) =>
         {
 
-            var opt = await ctx.GetOptionalAsync(_collection, index.ToString());
-            if (opt == default)
+            if (upsert)
             {
-                tasks.Add(ctx.ReplaceAsync(opt, documento));
-            }
-            else
+                var opt = await ctx.GetOptionalAsync(_collection, index.ToString());
+                if (opt != null)
+                {
+                    ctx.ReplaceAsync(opt, documento);
+                }
+                else
+                {
+                    ctx.InsertAsync(_collection, index.ToString(), documento);
+                }
+            } else
             {
-                tasks.Add(ctx.InsertAsync(_collection, index.ToString(), documento));
+                ctx.InsertAsync(_collection, index.ToString(), documento);
             }
 
             if (index % 100 == 0)
@@ -78,11 +84,12 @@ internal class StartUsing
                 Console.WriteLine($"Staged {index:D10} documents - {stopWatch.Elapsed.TotalSeconds:0.00}secs");
             }
         });
-    }
+        }
+   
 
-    public async Task<string> ExecuteInKeyValueTransactionAsync(string username, string password, string host, int total, object documento, int expiryTime)
+    public async Task<string> ExecuteInKeyValueTransactionAsync(string username, string password, string host, int total, object documento, int expiryTime, bool upsert)
     {
-        var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l > LogLevel.Information).AddConsole(); });
+        var loggerFactory = LoggerFactory.Create(builder => { builder.AddFilter(l => l > LogLevel.Warning).AddConsole(); });
         var logger = loggerFactory.CreateLogger("ExecuteInTransactionAsync");
 
         var options = new ClusterOptions() { NumKvConnections = 128 }.WithCredentials(username, password).WithLogging(loggerFactory);
@@ -96,7 +103,6 @@ internal class StartUsing
             .LoggerFactory(loggerFactory)
             .CleanupLostAttempts(true)
             .CleanupClientAttempts(true)
-            .MetadataCollection(metadata_collection)
             .CleanupWindow(TimeSpan.FromSeconds(20))
             .Build());
 
@@ -106,31 +112,9 @@ internal class StartUsing
         var result = await _transactions.RunAsync(async ctx =>
         {
 
-                while (true)
-                {
-                    try
-                    {
-                        await updateDocs(cluster, ctx, documento, total);
-                        break;
-                    }
-                    catch (TransactionOperationFailedException e)
-                    {
-                        logger.LogError("Transaction operation failed " + e.Message);
-                    }
-                    catch (TransactionCommitAmbiguousException e)
-                    {
-                        logger.LogError("Transaction possibly committed " + e.Message);
-                    }
-                    catch (TransactionExpiredException e)
-                    {
-                        logger.LogError("Transaction expired, trying again " + e.Message);
-                    }
-                    catch (TransactionFailedException e)
-                    {
-                        logger.LogError("Transaction did not reach commit point " + e.Message);
-                    }
-                }
-           
+            await updateDocs(cluster, ctx, documento, total, upsert);
+                      
+         
         });
 
         watch.Stop();
